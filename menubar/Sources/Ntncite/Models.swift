@@ -9,10 +9,18 @@ struct SyncStatus: Codable {
     }
     let ts: String
     let pending: Bool
+    let pendingNew: Int?      // 新论文(尚未建页)待同步数
+    let pendingChanged: Int?  // 笔记改过、待更新数
     let papers: Int
     let notes: Int
     let health: Health
     let lastRun: HistoryEntry?
+}
+
+struct Failure: Codable {
+    let itemKey: String
+    let title: String
+    let error: String
 }
 
 struct HistoryEntry: Codable, Identifiable {
@@ -26,6 +34,14 @@ struct HistoryEntry: Codable, Identifiable {
     let durationMs: Int
     let ok: Bool
     let error: String?
+    let failures: [Failure]?  // 这次失败的论文(哪几篇 + 为什么)
+}
+
+struct OrphanPage: Codable, Identifiable {
+    var id: String { pageId }
+    let itemKey: String
+    let title: String
+    let pageId: String
 }
 
 extension HistoryEntry {
@@ -48,10 +64,12 @@ struct PaperEntry: Codable, Identifiable {
     let citekey: String?
     let year: Int?
     let noteCount: Int
+    let imageCount: Int?
     let authors: String
     let publication: String?
     let standalone: Bool
     let notionPageId: String?
+    let syncState: String?  // "new" / "changed" / "synced"
 }
 
 /// UI 语言。默认跟随系统(中文系统 → zh,否则 en),可在菜单里切换并记住。

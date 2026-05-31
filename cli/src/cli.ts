@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { loadConfig } from './config';
 import { buildPaperRecords, type PaperRecord } from './paper';
-import { syncPapers, type SyncResult } from './notion/sync';
+import { syncPapers, findOrphans, type SyncResult } from './notion/sync';
 import { acquireLock } from './lock';
 import { loadSignature, loadState, saveSignature } from './state';
 import { appendHistory, readHistory, runDoctor, type HistoryEntry } from './status';
@@ -23,6 +23,7 @@ interface Args {
   status: boolean;
   doctor: boolean;
   list: boolean;
+  orphans: boolean;
   showJunk: boolean;
   noteKey?: string;
   citekey?: string;
@@ -41,6 +42,7 @@ function parseArgs(argv: string[]): Args {
     status: false,
     doctor: false,
     list: false,
+    orphans: false,
     showJunk: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -55,6 +57,7 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--status') a.status = true;
     else if (t === '--doctor') a.doctor = true;
     else if (t === '--list') a.list = true;
+    else if (t === '--orphans') a.orphans = true;
     else if (t === '--show-junk') a.showJunk = true;
     else if (t === '--note-key') a.noteKey = argv[++i];
     else if (t === '--citekey') a.citekey = argv[++i];
@@ -226,11 +229,21 @@ async function main() {
   // --status:给菜单栏 App 的快照(JSON 到 stdout,不写 Notion)
   if (args.status) {
     const last = readHistory(cfg.historyFile, 1)[0] ?? null;
+    const st = loadState(cfg.stateFile);
+    let pendingNew = 0;
+    let pendingChanged = 0;
+    for (const p of papers) {
+      const cached = st[p.itemKey];
+      if (!cached) pendingNew++;
+      else if (cached.contentHash !== p.hash) pendingChanged++;
+    }
     process.stdout.write(
       JSON.stringify(
         {
           ts: new Date().toISOString(),
           pending: loadSignature(cfg.signatureFile) !== signature,
+          pendingNew,
+          pendingChanged,
           papers: papers.length,
           notes: papers.reduce((s, p) => s + p.noteCount, 0),
           health: { zoteroBbt: Boolean(ready), volume: existsSync(cfg.sqlitePath) },
@@ -246,18 +259,32 @@ async function main() {
   // --list:给菜单栏 App 的条目清单(轻量,不含 blocks;含 notionPageId 便于深链)
   if (args.list) {
     const st = loadState(cfg.stateFile);
-    const lite = papers.map((p) => ({
-      itemKey: p.itemKey,
-      title: p.title,
-      citekey: p.citekey,
-      year: p.year,
-      noteCount: p.noteCount,
-      authors: p.authors,
-      publication: p.publication,
-      standalone: p.standalone,
-      notionPageId: st[p.itemKey]?.notionPageId ?? null,
-    }));
+    const lite = papers.map((p) => {
+      const cached = st[p.itemKey];
+      const syncState = !cached ? 'new' : cached.contentHash === p.hash ? 'synced' : 'changed';
+      return {
+        itemKey: p.itemKey,
+        title: p.title,
+        citekey: p.citekey,
+        year: p.year,
+        noteCount: p.noteCount,
+        imageCount: p.imageCount,
+        authors: p.authors,
+        publication: p.publication,
+        standalone: p.standalone,
+        notionPageId: cached?.notionPageId ?? null,
+        syncState,
+      };
+    });
     process.stdout.write(JSON.stringify(lite, null, 2) + '\n');
+    return;
+  }
+
+  // --orphans:查 Notion 里已无 Zotero 对应的孤儿页(按需,会查一次 Notion)
+  if (args.orphans) {
+    const currentKeys = new Set(papers.map((p) => p.itemKey));
+    const orphans = await findOrphans(cfg, currentKeys);
+    process.stdout.write(JSON.stringify(orphans, null, 2) + '\n');
     return;
   }
 
@@ -322,11 +349,14 @@ async function main() {
 
     if (!args.dryRun) {
       const tally = { create: 0, update: 0, skip: 0 };
-      let failed = 0;
-      for (const r of results) {
-        if (r.ok) tally[r.action]++;
-        else failed++;
-      }
+      for (const r of results) if (r.ok) tally[r.action]++;
+      const failures = results
+        .filter((r) => !r.ok)
+        .map((r) => ({
+          itemKey: r.record.itemKey,
+          title: r.record.title.slice(0, 80),
+          error: (r.error ?? '').slice(0, 200),
+        }));
       appendHistory(cfg.historyFile, {
         ts: new Date().toISOString(),
         trigger,
@@ -335,12 +365,13 @@ async function main() {
         skip: tally.skip,
         total: results.length,
         durationMs,
-        ok: failed === 0,
-        error: failed ? `${failed} 篇同步失败` : null,
+        ok: failures.length === 0,
+        error: failures.length ? `${failures.length} 篇同步失败` : null,
+        failures: failures.length ? failures : undefined,
       });
       // 全部成功才记签名(手动 / 自动一致),下次 --auto 无变化即可秒退;
       // 有失败则不记 → 下次仍判定有变化、自动重试失败的那几篇。
-      if (failed === 0) saveSignature(cfg.signatureFile, signature);
+      if (failures.length === 0) saveSignature(cfg.signatureFile, signature);
       else process.exitCode = 1; // 有失败:非零退出,但已完成的不回滚
     }
   } finally {

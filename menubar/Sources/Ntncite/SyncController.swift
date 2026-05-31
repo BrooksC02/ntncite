@@ -62,6 +62,9 @@ final class SyncController: ObservableObject {
     @Published var launchdLoaded = true
     @Published var intervalMinutes = 15
     @Published var lastError: String?
+    @Published var orphans: [OrphanPage] = []
+    @Published var orphansLoading = false
+    @Published var orphansChecked = false
     @Published var lang: Lang
 
     /// 截图/试用用的演示模式:NTNCITE_DEMO=1 时用公开论文填充,不碰真实 Zotero/Notion。
@@ -118,17 +121,21 @@ final class SyncController: ObservableObject {
             ("ImageNet Classification with Deep CNNs", "krizhevsky2012", 2012, "Krizhevsky A, Sutskever I, Hinton G", 1),
             ("Highly accurate protein structure prediction with AlphaFold", "jumper2021", 2021, "Jumper J et al.", 4),
         ]
-        entries = demo.map { t, ck, y, au, n in
-            PaperEntry(itemKey: ck, title: t, citekey: ck, year: y, noteCount: n,
-                       authors: au, publication: nil, standalone: false, notionPageId: nil)
+        entries = demo.enumerated().map { i, e in
+            let (t, ck, y, au, n) = e
+            return PaperEntry(itemKey: ck, title: t, citekey: ck, year: y, noteCount: n,
+                              imageCount: i == 7 ? 2 : 0, authors: au, publication: nil,
+                              standalone: false, notionPageId: nil,
+                              syncState: i == 0 ? "changed" : "synced")
         }
         history = [
-            HistoryEntry(ts: iso(180), trigger: "manual", create: 0, update: 0, skip: 8, total: 8, durationMs: 1240, ok: true, error: nil),
-            HistoryEntry(ts: iso(3600), trigger: "auto", create: 1, update: 0, skip: 7, total: 8, durationMs: 1510, ok: true, error: nil),
-            HistoryEntry(ts: iso(7200), trigger: "force", create: 0, update: 8, skip: 0, total: 8, durationMs: 12830, ok: true, error: nil),
-            HistoryEntry(ts: iso(90000), trigger: "auto", create: 2, update: 0, skip: 5, total: 7, durationMs: 1100, ok: true, error: nil),
+            HistoryEntry(ts: iso(180), trigger: "manual", create: 0, update: 0, skip: 8, total: 8, durationMs: 1240, ok: true, error: nil, failures: nil),
+            HistoryEntry(ts: iso(3600), trigger: "auto", create: 1, update: 0, skip: 7, total: 8, durationMs: 1510, ok: true, error: nil, failures: nil),
+            HistoryEntry(ts: iso(7200), trigger: "force", create: 0, update: 8, skip: 0, total: 8, durationMs: 12830, ok: true, error: nil, failures: nil),
+            HistoryEntry(ts: iso(90000), trigger: "auto", create: 2, update: 0, skip: 5, total: 7, durationMs: 1100, ok: true, error: nil, failures: nil),
         ]
-        status = SyncStatus(ts: iso(0), pending: false, papers: 8, notes: 15,
+        status = SyncStatus(ts: iso(0), pending: true, pendingNew: 0, pendingChanged: 1,
+                            papers: 8, notes: 15,
                             health: .init(zoteroBbt: true, volume: true), lastRun: history.first)
         launchdLoaded = true
         intervalMinutes = 15
@@ -162,6 +169,23 @@ final class SyncController: ObservableObject {
         }
     }
 
+    /// 按需查孤儿页(Zotero 已无对应、Notion 还留着的页)。会查一次 Notion,不放进 45s 轮询。
+    func checkOrphans() async {
+        if isDemo {
+            orphans = [OrphanPage(itemKey: "OLD123", title: "A paper you removed from Zotero", pageId: "demo")]
+            orphansChecked = true
+            return
+        }
+        orphansLoading = true
+        let r = await pnpm(["--orphans"])
+        if let data = extractJSONArray(r.stdout),
+           let arr = try? JSONDecoder().decode([OrphanPage].self, from: data) {
+            orphans = arr
+        }
+        orphansLoading = false
+        orphansChecked = true
+    }
+
     func openPaper(_ e: PaperEntry) {
         if let pid = e.notionPageId, !pid.isEmpty {
             let clean = pid.replacingOccurrences(of: "-", with: "")
@@ -171,6 +195,11 @@ final class SyncController: ObservableObject {
             }
         }
         open(.notion)
+    }
+
+    func openOrphan(_ o: OrphanPage) {
+        let clean = o.pageId.replacingOccurrences(of: "-", with: "")
+        if let u = URL(string: "https://www.notion.so/\(clean)") { NSWorkspace.shared.open(u) }
     }
 
     func loadHistory() {
@@ -283,6 +312,18 @@ final class SyncController: ObservableObject {
         case .pending: return .orange
         case .idle: return .green
         }
+    }
+
+    /// 待同步明细:"新 N · 改 M";拿不到细分数时退回笼统的"有改动"。
+    var pendingDetail: String? {
+        guard let s = status, s.pending else { return nil }
+        let n = s.pendingNew ?? 0
+        let c = s.pendingChanged ?? 0
+        if n == 0 && c == 0 { return loc("changes", "有改动") }
+        var parts: [String] = []
+        if n > 0 { parts.append(loc("\(n) new", "新 \(n)")) }
+        if c > 0 { parts.append(loc("\(c) changed", "改 \(c)")) }
+        return parts.joined(separator: " · ")
     }
 
     var statusSummary: String {

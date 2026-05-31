@@ -80,6 +80,41 @@ async function fetchAllExisting(notesDsId: string): Promise<Map<string, Existing
   return map;
 }
 
+export interface OrphanPage {
+  itemKey: string;
+  title: string;
+  pageId: string;
+}
+
+/**
+ * 查 Notion 里已不再对应任何「现存 Zotero 论文」的孤儿页(Zotero 删了笔记/条目后脚本不会删页)。
+ * 会分页查一次 Notion——按需调用,别放进高频轮询。
+ */
+export async function findOrphans(cfg: Config, currentKeys: Set<string>): Promise<OrphanPage[]> {
+  const notesDsId = cfg.notion.notesDataSourceId;
+  if (!notesDsId) throw new Error('config.notion.notesDataSourceId 未设置。');
+  await ntnAlive();
+  const orphans: OrphanPage[] = [];
+  let cursor: string | undefined;
+  do {
+    const body: Record<string, unknown> = { page_size: 100 };
+    if (cursor) body.start_cursor = cursor;
+    const res = await ntnApi<{ results: any[]; has_more: boolean; next_cursor: string | null }>(
+      `v1/data_sources/${notesDsId}/query`,
+      { method: 'POST', body },
+    );
+    for (const page of res.results ?? []) {
+      const key = page.properties?.['Zotero Item Key']?.rich_text?.[0]?.plain_text ?? '';
+      if (!key || currentKeys.has(key)) continue;
+      const title =
+        (page.properties?.['Name']?.title ?? []).map((t: any) => t?.plain_text ?? '').join('') || '(untitled)';
+      orphans.push({ itemKey: key, title, pageId: page.id });
+    }
+    cursor = res.has_more ? res.next_cursor ?? undefined : undefined;
+  } while (cursor);
+  return orphans;
+}
+
 function rich(text: string) {
   return [{ type: 'text' as const, text: { content: text } }];
 }

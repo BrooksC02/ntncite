@@ -15,6 +15,8 @@ export interface HistoryEntry {
   durationMs: number;
   ok: boolean;
   error?: string | null;
+  /** 本次失败的论文(单篇隔离后收集),供菜单栏显示「哪几篇、为什么」 */
+  failures?: { itemKey: string; title: string; error: string }[];
 }
 
 export function appendHistory(path: string, e: HistoryEntry): void {

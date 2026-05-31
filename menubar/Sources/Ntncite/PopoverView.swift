@@ -48,8 +48,8 @@ struct PopoverView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
-                if c.status?.pending == true {
-                    Text(c.loc("● changes", "● 有改动"))
+                if let pd = c.pendingDetail {
+                    Text("● \(pd)")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.orange)
                 }
@@ -165,13 +165,60 @@ struct PopoverView: View {
             Picker("", selection: $tab) {
                 Text(c.loc("Entries \(c.entries.count)", "条目 \(c.entries.count)")).tag(0)
                 Text(c.loc("History", "历史")).tag(1)
+                Text(c.loc("Orphans", "孤儿")).tag(2)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            if tab == 0 { entriesList } else { historyList }
+            switch tab {
+            case 0: entriesList
+            case 1: historyList
+            default: orphansList
+            }
         }
         .sectionCard()
+    }
+
+    // MARK: 孤儿页(Zotero 已无对应,Notion 还留着 —— 按需查)
+
+    private var orphansList: some View {
+        ScrollView {
+            VStack(spacing: 1) {
+                if c.orphansLoading {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.mini)
+                        Text(c.loc("Checking Notion…", "正在查 Notion…")).font(.caption2).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                } else if c.orphans.isEmpty {
+                    Text(c.orphansChecked ? c.loc("No orphan pages 🎉", "没有孤儿页 🎉")
+                                          : c.loc("Checking…", "检查中…"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else {
+                    Text(c.loc("In Notion but no longer in Zotero — click to open & delete by hand:",
+                               "Notion 有、Zotero 已无 —— 点开手动删:"))
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 2)
+                    ForEach(c.orphans) { o in
+                        Button { c.openOrphan(o) } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "doc.badge.ellipsis").font(.caption).foregroundStyle(.orange)
+                                Text(o.title).font(.caption.weight(.medium)).lineLimit(1)
+                                Spacer(minLength: 6)
+                                Image(systemName: "arrow.up.right").font(.caption2).foregroundStyle(.secondary)
+                            }
+                            .padding(.vertical, 4).padding(.horizontal, 5).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .padding(.trailing, 6)
+        }
+        .frame(height: 170)
+        .onAppear { if !c.orphansLoading { Task { await c.checkOrphans() } } }
     }
 
     // MARK: 条目列表(点击跳 Notion 页)
@@ -187,14 +234,19 @@ struct PopoverView: View {
                     ForEach(c.entries) { e in
                         Button { c.openPaper(e) } label: {
                             HStack(spacing: 8) {
-                                Image(systemName: "doc.text")
-                                    .font(.caption).foregroundStyle(.secondary)
+                                Circle().fill(entryStateColor(e.syncState)).frame(width: 7, height: 7)
+                                    .help(entryStateHelp(e.syncState))
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(e.title).font(.caption.weight(.medium)).lineLimit(1)
                                     Text(entrySubtitle(e))
                                         .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                                 }
                                 Spacer(minLength: 6)
+                                if let ic = e.imageCount, ic > 0 {
+                                    Image(systemName: "photo")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                        .help(c.loc("\(ic) inline image(s) not synced", "\(ic) 张内嵌图未同步"))
+                                }
                                 Text("\(e.noteCount)")
                                     .font(.caption2.weight(.semibold))
                                     .padding(.horizontal, 6).padding(.vertical, 2)
@@ -222,6 +274,21 @@ struct PopoverView: View {
         return parts.joined(separator: " · ")
     }
 
+    private func entryStateColor(_ s: String?) -> Color {
+        switch s {
+        case "new": return .blue
+        case "changed": return .orange
+        default: return Color.secondary.opacity(0.35)
+        }
+    }
+    private func entryStateHelp(_ s: String?) -> String {
+        switch s {
+        case "new": return c.loc("new — not synced yet", "新 —— 尚未同步")
+        case "changed": return c.loc("changed — pending update", "已改 —— 待更新")
+        default: return c.loc("synced", "已同步")
+        }
+    }
+
     // MARK: 历史
 
     private var historyList: some View {
@@ -232,14 +299,20 @@ struct PopoverView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     ForEach(c.history) { h in
-                        HStack(spacing: 6) {
-                            Text(c.rel(h.ts)).frame(width: 64, alignment: .leading)
-                            Text(triggerMark(h.trigger))
-                            Text("+\(h.create) ~\(h.update) =\(h.skip)").foregroundStyle(.secondary)
-                            Spacer(minLength: 6)
-                            Text(String(format: "%.1fs", h.durationSec))
-                            Image(systemName: h.ok ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(h.ok ? .green : .red)
+                        VStack(alignment: .leading, spacing: 1) {
+                            HStack(spacing: 6) {
+                                Text(c.rel(h.ts)).frame(width: 64, alignment: .leading)
+                                Text(triggerMark(h.trigger))
+                                Text("+\(h.create) ~\(h.update) =\(h.skip)").foregroundStyle(.secondary)
+                                Spacer(minLength: 6)
+                                Text(String(format: "%.1fs", h.durationSec))
+                                Image(systemName: h.ok ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(h.ok ? .green : .red)
+                            }
+                            if let fs = h.failures, !fs.isEmpty {
+                                Text("✗ " + fs.map(\.title).joined(separator: ", "))
+                                    .foregroundStyle(.red).lineLimit(2)
+                            }
                         }
                         .font(.caption2)
                         .padding(.vertical, 1)
