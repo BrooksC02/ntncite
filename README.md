@@ -138,6 +138,12 @@ The app shows:
 
 It only drives the CLI — no sync logic lives in the app.
 
+## Deploying with an AI agent
+
+Setting this up with an AI agent (Claude Code, Cursor, Codex, …)? Point it at this repo and tell it to **read [`AGENTS.md`](AGENTS.md)** first — a step-by-step setup runbook written for agents.
+
+Two things the agent will need *you* for: `ntn login` is interactive (it can't do that for you), and it'll ask which Notion page the "Library" DB should live under. It also shows a `--dry-run` plan before the first real sync — that sync writes to your Notion, so take a look.
+
 ## Commands
 
 See [`cli/README.md`](cli/README.md). Quick reference:

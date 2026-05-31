@@ -135,6 +135,12 @@ App 显示:
 
 它只驱动 CLI —— 同步逻辑不在 App 里。
 
+## 用 AI agent 部署
+
+打算用 AI agent(Claude Code / Cursor / Codex 等)来装?把它指向这个仓库,让它**先读 [`AGENTS.md`](AGENTS.md)** —— 一份专门写给 agent 的分步部署手册。
+
+有两件事 agent 得靠*你*:`ntn login` 是交互式的(它替你做不了),以及它会问你「Library」库要建在哪个 Notion 页面下。首次真同步前它还会先给你看一份 `--dry-run` 计划 —— 那次会写进你的 Notion,过目一下。
+
 ## 命令
 
 详见 [`cli/README.md`](cli/README.md)。速查:
