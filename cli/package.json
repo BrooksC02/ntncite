@@ -1,0 +1,33 @@
+{
+  "name": "ntncite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sync your Zotero library (metadata + notes) to Notion via ntn — one paper per row, clean formatting.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "sync": "tsx src/cli.ts",
+    "setup-db": "tsx scripts/setup.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@tryfabric/martian": "^1.2.4",
+    "better-sqlite3": "^11.8.1",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.5",
+    "@types/turndown": "^5.0.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
+}

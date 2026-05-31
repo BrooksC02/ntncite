@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.sync-state.json
+.sync-sig
+.sync-history.jsonl
+*.log

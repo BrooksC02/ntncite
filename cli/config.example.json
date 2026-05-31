@@ -1,0 +1,8 @@
+{
+  "zoteroDataDir": "~/Zotero",
+  "libraryId": 1,
+  "bbtEndpoint": "http://127.0.0.1:23119/better-bibtex/json-rpc",
+  "notion": {
+    "notesDataSourceId": "PASTE_YOUR_NOTION_DATA_SOURCE_ID"
+  }
+}

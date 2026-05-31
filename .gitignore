@@ -1,0 +1,9 @@
+node_modules/
+.build/
+.sync-state.json
+.sync-sig
+.sync-history.jsonl
+config.json
+.env
+.DS_Store
+*.log
