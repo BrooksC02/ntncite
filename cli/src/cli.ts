@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { loadConfig } from './config';
 import { buildPaperRecords, type PaperRecord } from './paper';
 import { syncPapers, type SyncResult } from './notion/sync';
+import { acquireLock } from './lock';
 import { loadSignature, loadState, saveSignature } from './state';
 import { appendHistory, readHistory, runDoctor, type HistoryEntry } from './status';
 import { computeSignature, plainText } from './util';
@@ -149,15 +150,22 @@ function blocksPreview(papers: PaperRecord[]) {
 // ───────────────────────── 同步结果报告 ─────────────────────────
 function reportSync(results: SyncResult[], dryRun: boolean) {
   const tally = { create: 0, update: 0, skip: 0 };
+  let failed = 0;
   console.log(`\n=== ${dryRun ? '同步计划 (--dry-run,不写 Notion)' : '同步结果'} ===`);
   for (const r of results) {
-    tally[r.action]++;
     const p = r.record;
     const tag = p.standalone ? '独立' : p.citekey ?? '∅';
     const meta = p.standalone ? '' : p.year ? `${p.year}` : '⚠无题录';
-    console.log(`  ${r.action.padEnd(6)} [${p.itemKey}] ${tag} ${meta}  「${p.title.slice(0, 34)}」 ${p.noteCount}条`);
+    if (r.ok) {
+      tally[r.action]++;
+      console.log(`  ${r.action.padEnd(6)} [${p.itemKey}] ${tag} ${meta}  「${p.title.slice(0, 34)}」 ${p.noteCount}条`);
+    } else {
+      failed++;
+      console.log(`  ✗FAIL  [${p.itemKey}] ${tag} ${meta}  「${p.title.slice(0, 34)}」 — ${r.error ?? ''}`);
+    }
   }
-  console.log(`\n合计: create ${tally.create} · update ${tally.update} · skip ${tally.skip}(共 ${results.length} 篇)`);
+  const tail = failed ? ` · 失败 ${failed}` : '';
+  console.log(`\n合计: create ${tally.create} · update ${tally.update} · skip ${tally.skip}${tail}(共 ${results.length} 篇)`);
 }
 
 async function main() {
@@ -280,45 +288,63 @@ async function main() {
     );
   }
   const trigger: HistoryEntry['trigger'] = args.auto ? 'auto' : args.force ? 'force' : 'manual';
+
+  // 真要写 Notion 了 → 抢进程锁,防止与后台自动同步并发(dry-run 只读,不抢锁)
+  const lock = args.dryRun ? { release() {} } : acquireLock(cfg.lockFile);
+  if (!lock) {
+    console.error('[lock] 另一个同步正在进行,跳过本次');
+    return;
+  }
+
   const t0 = Date.now();
-  let results: SyncResult[];
   try {
-    results = await syncPapers(cfg, papers, args.dryRun, args.force);
-  } catch (e) {
+    let results: SyncResult[];
+    try {
+      results = await syncPapers(cfg, papers, args.dryRun, args.force);
+    } catch (e) {
+      if (!args.dryRun) {
+        appendHistory(cfg.historyFile, {
+          ts: new Date().toISOString(),
+          trigger,
+          create: 0,
+          update: 0,
+          skip: 0,
+          total: papers.length,
+          durationMs: Date.now() - t0,
+          ok: false,
+          error: e instanceof Error ? e.message : String(e),
+        });
+      }
+      throw e;
+    }
+    const durationMs = Date.now() - t0;
+    reportSync(results, args.dryRun);
+
     if (!args.dryRun) {
+      const tally = { create: 0, update: 0, skip: 0 };
+      let failed = 0;
+      for (const r of results) {
+        if (r.ok) tally[r.action]++;
+        else failed++;
+      }
       appendHistory(cfg.historyFile, {
         ts: new Date().toISOString(),
         trigger,
-        create: 0,
-        update: 0,
-        skip: 0,
-        total: papers.length,
-        durationMs: Date.now() - t0,
-        ok: false,
-        error: e instanceof Error ? e.message : String(e),
+        create: tally.create,
+        update: tally.update,
+        skip: tally.skip,
+        total: results.length,
+        durationMs,
+        ok: failed === 0,
+        error: failed ? `${failed} 篇同步失败` : null,
       });
+      // 全部成功才记签名(手动 / 自动一致),下次 --auto 无变化即可秒退;
+      // 有失败则不记 → 下次仍判定有变化、自动重试失败的那几篇。
+      if (failed === 0) saveSignature(cfg.signatureFile, signature);
+      else process.exitCode = 1; // 有失败:非零退出,但已完成的不回滚
     }
-    throw e;
-  }
-  const durationMs = Date.now() - t0;
-  reportSync(results, args.dryRun);
-
-  if (!args.dryRun) {
-    const tally = { create: 0, update: 0, skip: 0 };
-    for (const r of results) tally[r.action]++;
-    appendHistory(cfg.historyFile, {
-      ts: new Date().toISOString(),
-      trigger,
-      create: tally.create,
-      update: tally.update,
-      skip: tally.skip,
-      total: results.length,
-      durationMs,
-      ok: true,
-      error: null,
-    });
-    // 同步成功后记下签名,下次 --auto 无变化即可秒退
-    if (args.auto) saveSignature(cfg.signatureFile, signature);
+  } finally {
+    lock.release();
   }
 }
 

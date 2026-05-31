@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "description": "Sync your Zotero library (metadata + notes) to Notion via ntn — one paper per row, clean formatting.",
+  "license": "MIT",
+  "author": "BrooksC02",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrooksC02/ntncite"
+  },
   "engines": {
     "node": ">=22"
   },
@@ -28,6 +34,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ]
+    ],
+    "overrides": {
+      "katex": "^0.16.21"
+    }
   }
 }

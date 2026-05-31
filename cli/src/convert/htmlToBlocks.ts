@@ -25,13 +25,14 @@ turndown.addRule('placeholderImages', {
 });
 
 // 把一棵 block 子树拍平成一串(丢弃各自的 children),用于超深嵌套上提。
-function flattenInto(children: any[], out: any[]): void {
+function flattenInto(children: any[], out: any[], depth = 0): void {
+  if (depth > 200) return; // 病态深嵌套保护:别因一条畸形笔记爆栈(正常笔记远不及此)
   for (const c of children) {
     const cont = c?.type ? c[c.type] : null;
     const sub = cont && Array.isArray(cont.children) ? cont.children : null;
     if (cont && sub) delete cont.children;
     out.push(c);
-    if (sub?.length) flattenInto(sub, out);
+    if (sub?.length) flattenInto(sub, out, depth + 1);
   }
 }
 

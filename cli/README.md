@@ -1,5 +1,7 @@
 # ntncite · cli (sync engine)
 
+> The command & contract reference. The commands below are bash (language-neutral); the prose annotations are in Chinese. For the full English overview, architecture, and one-step setup, see the [repo root README](../README.md).
+
 把 Zotero 在读文献(有笔记的论文)单向同步到 Notion 的「Library」库:**一篇论文一行**,
 题录元数据进属性,该论文的多条笔记各自成块进正文。独立 TS/Node 脚本,写入走 **ntn**
 (Notion 官方 CLI,以你本人身份认证——不需要 integration token)。幂等。

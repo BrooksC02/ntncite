@@ -90,6 +90,16 @@ function initials(first: string | null): string {
     .join('');
 }
 
+/** Zotero 把 dateAdded 存成 UTC 的 "YYYY-MM-DD HH:MM:SS";转成**本地**日历日期,避免负时区(美国)用户差一天。 */
+function utcToLocalDate(s: string | null): string | null {
+  if (!s) return null;
+  const d = new Date(s.replace(' ', 'T') + 'Z');
+  if (Number.isNaN(d.getTime())) return s.slice(0, 10); // 解析失败兜底
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 function readPaperMetaFromDb(db: Database.Database, itemKeys: string[]): Map<string, PaperMeta> {
   const out = new Map<string, PaperMeta>();
   const uniq = [...new Set(itemKeys)];
@@ -153,7 +163,7 @@ function readPaperMetaFromDb(db: Database.Database, itemKeys: string[]): Map<str
         fields['bookTitle'] ??
         fields['websiteTitle'] ??
         null,
-      dateAdded: item.dateAdded ? item.dateAdded.slice(0, 10) : null,
+      dateAdded: utcToLocalDate(item.dateAdded),
       dateModified: item.dateModified ?? null,
       tags,
     });

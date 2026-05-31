@@ -1,5 +1,7 @@
 # ntncite · menubar
 
+> A SwiftUI menu-bar shell over the sync engine — status, one-click sync, health lights, history. It only drives the CLI; no sync logic lives here. Build with `swift build`. (Notes below are in Chinese.)
+
 macOS 菜单栏控制台(SwiftUI `MenuBarExtra`),`ntncite` sync 引擎的图形外壳。**不含同步逻辑**,
 只调 CLI(`pnpm --silent sync --status/--doctor/--list` + 读 `.sync-history.jsonl`)、手动触发、
 管 launchd、开链接。
@@ -9,7 +11,7 @@ macOS 菜单栏控制台(SwiftUI `MenuBarExtra`),`ntncite` sync 引擎的图形�
 - 状态卡(同步中转圈)+ 上次同步摘要;**BBT 掉线弹橙色警告**(没 BBT 同步走不通)
 - 立即同步 / 强制重推;频率分段(改 launchd 重载)+ 暂停/恢复自动同步
 - 健康灯:BBT · ntn · 卷 · Notion
-- 条目(每篇论文,点击跳其 Notion 页)/ 历史表 / 耗时柱状图(Swift Charts)
+- 条目(每篇论文,点击跳其 Notion 页)/ 历史表
 
 ## 跑
 

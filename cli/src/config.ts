@@ -7,14 +7,10 @@ import { fileURLToPath } from 'node:url';
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 export interface NotionConfig {
-  /** 「文献笔记」库 database id（参考用） */
+  /** 「文献」库 database id(菜单栏 App 拼 Notion URL 用,可选) */
   notesDatabaseId?: string | null;
-  /** 「文献笔记」data source id —— 同步目标（ntn 走新版 data-source API） */
+  /** 「文献」库 data source id —— 同步目标(ntn 走新版 data-source API) */
   notesDataSourceId?: string | null;
-  /** 题录库（文献已读）database id（参考用） */
-  papersDatabaseId?: string | null;
-  /** 题录库 data source id —— relation 关联对象 */
-  papersDataSourceId?: string | null;
 }
 
 export interface Config {
@@ -28,6 +24,8 @@ export interface Config {
   signatureFile: string;
   /** 同步历史(每次真跑追加一行 JSON),供菜单栏 App 读 */
   historyFile: string;
+  /** 进程互斥锁文件:防止后台自动同步与手动同步并发 */
+  lockFile: string;
 }
 
 function expandHome(p: string): string {
@@ -50,11 +48,10 @@ export function loadConfig(): Config {
     notion: {
       notesDatabaseId: raw.notion?.notesDatabaseId ?? null,
       notesDataSourceId: raw.notion?.notesDataSourceId ?? null,
-      papersDatabaseId: raw.notion?.papersDatabaseId ?? null,
-      papersDataSourceId: raw.notion?.papersDataSourceId ?? null,
     },
     stateFile: join(PROJECT_ROOT, '.sync-state.json'),
     signatureFile: join(PROJECT_ROOT, '.sync-sig'),
     historyFile: join(PROJECT_ROOT, '.sync-history.jsonl'),
+    lockFile: join(PROJECT_ROOT, '.sync.lock'),
   };
 }

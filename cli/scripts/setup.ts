@@ -41,16 +41,27 @@ const PROPERTIES: Record<string, unknown> = {
   'Last Synced': { date: {} },
 };
 
+// 接受裸 ID(带/不带连字符)或粘贴的 Notion 页面 URL,统一抽出 32 位十六进制 ID。
+function normalizePageId(input: string): string {
+  const s = input.trim();
+  const dashed = s.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  if (dashed) return dashed[0].replace(/-/g, '');
+  const runs = s.match(/[0-9a-f]{32}/gi); // URL 里 ID 是末尾一段连续 32 位 hex
+  if (runs) return runs[runs.length - 1];
+  throw new Error(`这不像 Notion 页面 ID 或 URL:「${input}」\n粘贴页面 URL,或 32 位十六进制 ID 都行。`);
+}
+
 async function main() {
-  const parent = process.argv[2];
-  if (!parent) {
+  const rawParent = process.argv[2];
+  if (!rawParent) {
     console.error(
       '用法: pnpm setup-db <notion-parent-page-id>\n' +
-        '  在 Notion 里建/选一个页面(把 ntn 的 integration 连上它),把页面 ID 传进来;' +
+        '  在 Notion 里建/选一个页面(把 ntn 的 integration 连上它),把页面 ID 或 URL 传进来;' +
         '「Library」库会建在该页面下。',
     );
     process.exit(1);
   }
+  const parent = normalizePageId(rawParent);
 
   await ntnAlive();
   console.log('→ 在 Notion 创建「Library」数据库…');

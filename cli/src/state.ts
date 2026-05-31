@@ -1,9 +1,9 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 
 /**
- * 本地同步状态（spec §7）：note_key → Notion 页 id + 内容 hash + 时间。
- * 作用是「缓存」：命中且 hash 未变可跳过、连 Notion query 都省。
- * 权威去重依据仍是 Notion 侧的 `Zotero Note Key` 属性——state 丢了也能靠它恢复不重复建页。
+ * 本地同步状态：itemKey → Notion 页 id + 内容 hash + 时间。
+ * 仅作记录 / 给菜单栏 `--list` 提供 notionPageId;**权威去重依据是 Notion 侧的
+ * `Zotero Item Key` 属性**(每次同步分页拉全库比对),state 丢了也能恢复、不会重复建页。
  */
 export interface StateEntry {
   notionPageId: string;
@@ -23,7 +23,9 @@ export function loadState(path: string): SyncState {
 }
 
 export function saveState(path: string, state: SyncState): void {
-  writeFileSync(path, JSON.stringify(state, null, 2), 'utf8');
+  const tmp = `${path}.tmp.${process.pid}`;
+  writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf8');
+  renameSync(tmp, path); // 原子替换:并发 / 崩溃不会留半截文件
 }
 
 /** --auto 变更签名:上次同步成功时 Zotero 侧的快照 hash。 */
