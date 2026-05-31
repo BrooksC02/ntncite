@@ -112,6 +112,8 @@ database with these properties (names must match exactly):
 | Item Type | Select | | **Zotero Item Key** | Text *(dedup key)* |
 | | | | Last Synced | Date |
 
+Of these, only **Reading Status** is yours to edit — the sync never overwrites it. Everything else is rewritten from Zotero on each sync; `Content Hash` / `Zotero Item Key` / `Last Synced` are the sync's own bookkeeping (don't hand-edit them).
+
 ### Background auto-sync (optional)
 
 ```bash
@@ -175,6 +177,7 @@ Rule of thumb: treat the page **body** as read-only. Keep your own notes in Zote
 - macOS only; personal library only (`libraryId` 1); Zotero + BBT must be running for a sync.
 - Syncs only papers that have notes ("currently reading"). Inline images in notes are not synced
   (placeholder text). Deeply nested lists are flattened to Notion's 2-level request limit.
+- Plugin-generated pseudo-notes are skipped (Chartero reading-history, addon storage, "Do not modify" placeholders) — only your real, hand-written notes sync.
 
 ## Troubleshooting
 

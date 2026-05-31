@@ -109,6 +109,8 @@ pnpm sync                                    # 真同步
 | Item Type | Select | | **Zotero Item Key** | Text *(去重主键)* |
 | | | | Last Synced | Date |
 
+这些字段里只有 **Reading Status** 归你改 —— 同步永不覆盖它。其余每次同步都按 Zotero 重写;`Content Hash` / `Zotero Item Key` / `Last Synced` 是同步自己的记账字段(别手改)。
+
 ### 后台自动同步(可选)
 
 ```bash
@@ -169,6 +171,7 @@ item key 匹配,用 content hash 判断该页要 create / skip(无变化)/ updat
 - 仅 macOS;仅个人库(`libraryId` 1);同步时 Zotero + BBT 必须开着。
 - 只同步**有笔记的论文**(= 在读)。笔记里的内嵌图片不同步(占位文本)。深层嵌套列表会被压到
   Notion 单请求的 2 层上限。
+- 插件生成的伪笔记会被跳过(Chartero 阅读历史 / addon 存储 / "Do not modify" 占位)—— 只同步你手写的真实笔记。
 
 ## 排错
 
