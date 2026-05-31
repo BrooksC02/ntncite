@@ -50,6 +50,12 @@ export function parseNoteDate(title: string | null): string | null {
   return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
 }
 
+/** 标题是否「就是一个日期标记」(可带前导 🗒)——这种首行已被 🗒 日期小标题完全代表,删掉不丢信息。 */
+export function isDateOnlyMarker(title: string | null): boolean {
+  if (!title) return false;
+  return DATE_ONLY.test(title.replace(/^\s*🗒\s*/u, '').trim());
+}
+
 /**
  * Notion 行标题（spec §4.1）：优先用 Zotero 笔记标题；
  * 标题为空或「纯日期」时，用 `citekey · 正文首句` 兜底（纯日期当标题没信息量）。

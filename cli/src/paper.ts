@@ -1,5 +1,5 @@
 import { htmlToBlocks } from './convert/htmlToBlocks';
-import { contentHash, parseNoteDate, plainText } from './util';
+import { contentHash, isDateOnlyMarker, parseNoteDate, plainText } from './util';
 import type { PaperMeta, ZoteroNote } from './zotero/sqlite';
 
 // 一行 = 一篇论文(有笔记的 = 在读)。元数据进属性,该论文的多条笔记各自成块进正文。
@@ -39,6 +39,13 @@ function headingThree(text: string) {
 function dividerBlock() {
   return { object: 'block' as const, type: 'divider' as const, divider: {} };
 }
+
+/** 取一个 block 的纯文本(拼 rich_text)。 */
+function blockText(b: any): string {
+  const rt = b?.type ? b[b.type]?.rich_text : null;
+  return Array.isArray(rt) ? rt.map((r: any) => r?.text?.content ?? r?.plain_text ?? '').join('') : '';
+}
+const normWs = (s: string) => s.replace(/\s+/g, ' ').trim();
 
 function fmtAuthors(meta: PaperMeta | null): string {
   if (!meta || !meta.authors.length) return '';
@@ -91,13 +98,20 @@ export function buildPaperRecords(
     const mdParts: string[] = [];
     const multi = converted.length > 1;
     converted.forEach((cn, i) => {
+      let blocks = cn.blocks;
       if (multi) {
         if (i > 0) bodyBlocks.push(dividerBlock());
         const cap = cn.date ? `🗒 ${cn.date}` : `🗒 笔记 ${i + 1}`;
         bodyBlocks.push(headingThree(cap));
         mdParts.push(`### ${cap}`);
+        // 仅当笔记首行「就是个日期」(已被上面的 🗒 日期小标题代表)时,删掉这重复的首块。
+        // 注释 / 无日期标题 / 正文首句等其它格式一律保留,避免误删正文(如 "LncRNA" 这种短标题块)。
+        const title = (cn.note.noteTitle ?? '').trim();
+        if (blocks.length && isDateOnlyMarker(title) && normWs(blockText(blocks[0])) === normWs(title)) {
+          blocks = blocks.slice(1);
+        }
       }
-      bodyBlocks.push(...cn.blocks);
+      bodyBlocks.push(...blocks);
       mdParts.push(cn.markdown);
     });
 
