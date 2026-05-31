@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<!--
+  ntncite landing page · static, zero-build (GitHub Pages from /docs).
+  Visual system: Animal Island UI (MIT © guokaigdg, github.com/guokaigdg/animal-island-ui),
+  shipped self-contained as animal-island-ui.css (fonts/icons/dividers base64-inlined).
+  Page layout + i18n toggle are page-local below; the .button-/.card-/.title-ribbon/.divider-/
+  .footer-/.checkbox-/.codeblock-/.pill-tag/.muted/.aiui classes come from that CSS.
+-->
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ntncite — mirror your Zotero into Notion, cleanly</title>
+  <meta name="description" content="A self-hosted, plugin-free macOS sync that mirrors your Zotero reading notes into Notion — one row per paper, built on Notion's official ntn CLI, no token." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="animal-island-ui.css" />
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; overflow-x: hidden; }
+    body {
+      font-family: var(--animal-font);
+      color: var(--animal-text-body);
+      line-height: 1.6;
+      background:
+        radial-gradient(circle at 14% 10%, rgba(255,255,255,.55) 0, rgba(255,255,255,0) 42%),
+        linear-gradient(180deg, #eef5e4 0%, #e6f0d8 52%, #dfecd0 100%);
+      background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ---- i18n toggle: EN default, swap to ZH via [data-lang="zh"] ---- */
+    .zh { display: none; }
+    html[data-lang="zh"] .en { display: none; }
+    html[data-lang="zh"] .zh { display: revert; }
+
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 0 22px; }
+
+    /* ---- top bar ---- */
+    .nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 0 6px;
+    }
+    .brand { font-weight: 900; font-size: 24px; color: var(--animal-text); letter-spacing: .01em; }
+    .brand .dot { color: var(--animal-primary); }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-link { color: var(--animal-text-body); font-weight: 700; text-decoration: none; font-size: 15px; opacity: .8; }
+    .nav-link:hover { opacity: 1; }
+    .lang-btn {
+      cursor: pointer; font-family: inherit; font-weight: 800; font-size: 14px;
+      color: var(--animal-primary-active); background: var(--animal-primary-bg);
+      border: 2px solid var(--animal-primary); border-radius: 50px;
+      padding: 6px 16px; letter-spacing: .02em; transition: all .2s var(--animal-ease);
+    }
+    .lang-btn:hover { background: #fff; }
+
+    /* ---- hero ---- */
+    .hero {
+      display: grid; grid-template-columns: 1.05fr .95fr; gap: 40px; align-items: center;
+      margin: 18px 0 8px; padding: 46px 48px;
+      border-radius: 34px;
+      background:
+        radial-gradient(circle at 88% 8%, rgba(255,255,255,.5) 0, rgba(255,255,255,0) 45%),
+        linear-gradient(158deg, #c4e9ef 0%, #d2ede7 38%, #e3f4dd 76%, #dcefce 100%);
+      box-shadow: 0 16px 40px rgba(70,110,80,.18);
+    }
+    .hero h1 {
+      color: var(--animal-text); font-weight: 900; letter-spacing: -.01em;
+      font-size: clamp(33px, 4.6vw, 50px); line-height: 1.12; margin: 18px 0 0;
+    }
+    .hero .hl { color: var(--animal-primary-active); }
+    .lead { font-size: clamp(16px, 1.7vw, 19px); color: var(--animal-text-body); margin: 18px 0 0; max-width: 34em; font-weight: 500; }
+    .cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 26px; }
+    a.button-root { text-decoration: none; }
+    .badges { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 22px; }
+    .hero-art { margin: 0; }
+    .hero-art img { width: 100%; height: auto; border-radius: 22px; box-shadow: 0 14px 34px rgba(70,90,60,.26); }
+    .hero-art img.en { display: block; }
+    .hero-art img.zh { display: none; }
+    html[data-lang="zh"] .hero-art img.en { display: none; }
+    html[data-lang="zh"] .hero-art img.zh { display: block; }
+    .hero-art figcaption { text-align: center; margin-top: 12px; }
+
+    /* ---- sections ---- */
+    .sec { padding: 8px 0; margin-top: 18px; }
+    .sec-head { text-align: center; margin: 26px 0 26px; }
+    .sec-head h2 { color: var(--animal-text); font-weight: 900; font-size: clamp(25px, 3vw, 33px); margin: 0; }
+    .sec-head .sub { color: var(--animal-text-secondary); font-weight: 600; font-size: 16px; margin: 8px 0 0; }
+
+    .sep {
+      width: 100%; max-width: 720px; margin: 36px auto;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      color: var(--animal-primary);
+    }
+    .sep .divider-root { flex: 1; }
+    .sep svg { flex: none; opacity: .85; }
+
+    /* ---- why grid ---- */
+    .grid-why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .grid-why .card-root { padding: 26px 28px; }
+    .grid-why .lab { margin-bottom: 10px; }
+    .card-root .card-h { color: var(--animal-text); font-weight: 800; }
+    .card-root .card-p { color: var(--animal-text-body); }
+
+    /* ---- before / after ---- */
+    .ba { display: grid; grid-template-columns: 1fr auto 1fr; gap: 22px; align-items: center; }
+    .ba figure { margin: 0; }
+    .ba figure img { width: 100%; height: auto; display: block; border-radius: 16px; box-shadow: 0 8px 22px rgba(90,80,55,.22); border: 3px solid #fff; }
+    .ba figcaption { margin-top: 12px; text-align: center; }
+    .ba-arrow { color: var(--animal-primary); display: flex; align-items: center; justify-content: center; }
+
+    /* ---- codeblock blocks ---- */
+    .codeblock-pre { font-size: 15px; line-height: 1.85; padding: 26px 30px; border-radius: 22px; overflow-x: auto; max-width: 860px; margin: 0 auto; }
+    .pipe { text-align: center; }
+    .quick { max-width: 820px; margin: 0 auto; }
+    .prereqs { display: flex; flex-wrap: wrap; gap: 9px; justify-content: center; margin: 0 auto 22px; }
+    .quick-foot { text-align: center; margin-top: 18px; font-size: 15px; }
+    .quick-foot a { color: var(--animal-primary-active); font-weight: 700; }
+
+    /* ---- menubar feature card ---- */
+    .feat { max-width: 760px; margin: 0 auto; padding: 30px 34px; }
+    .feat .checkbox-label b { color: var(--animal-text); font-weight: 800; }
+
+    /* ---- safety ---- */
+    .safe { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .safe .card-root { padding: 26px 28px; }
+    .safe-foot { text-align: center; margin-top: 20px; font-size: 15px; }
+    .safe-foot a { color: var(--animal-primary-active); font-weight: 700; }
+
+    /* ---- footer ---- */
+    .foot { margin-top: 56px; }
+    .foot .footer-band { width: 100%; }
+    .foot-inner { background: #f6f1e2; border-top: 0; padding: 30px 22px 46px; text-align: center; }
+    .linkrow { display: flex; flex-wrap: wrap; gap: 10px 22px; justify-content: center; margin-bottom: 16px; }
+    .linkrow a { color: var(--animal-text); font-weight: 700; text-decoration: none; font-size: 15px; border-bottom: 2px solid var(--animal-primary-bg); padding-bottom: 1px; }
+    .linkrow a:hover { border-color: var(--animal-primary); }
+    .credits { color: var(--animal-text-secondary); font-size: 13.5px; font-weight: 600; line-height: 2; }
+    .credits a { color: var(--animal-text-muted); }
+
+    /* ---- responsive ---- */
+    @media (max-width: 820px) {
+      .hero { grid-template-columns: 1fr; padding: 34px 26px; gap: 28px; }
+      .hero-art { order: -1; }
+      .grid-why { grid-template-columns: 1fr; }
+      .safe { grid-template-columns: 1fr; }
+      .ba { grid-template-columns: 1fr; }
+      .ba-arrow { transform: rotate(90deg); margin: 4px 0; }
+    }
+  </style>
+</head>
+
+<body class="aiui">
+<div class="wrap">
+
+  <!-- ============ NAV ============ -->
+  <nav class="nav">
+    <span class="brand">ntncite<span class="dot">.</span></span>
+    <div class="nav-right">
+      <a class="nav-link" href="#quickstart"><span class="en">Quick start</span><span class="zh">快速上手</span></a>
+      <a class="nav-link" href="https://github.com/BrooksC02/ntncite" target="_blank" rel="noopener">GitHub</a>
+      <button class="lang-btn" id="langToggle" type="button" aria-label="Switch language">中文</button>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <div class="hero-copy">
+      <span class="title-root">
+        <span class="title-ribbon title-color-app-teal" style="font-size:21px;">
+          <span class="title-ribbon-back title-ribbon-back-left" aria-hidden="true"></span>
+          <span class="title-ribbon-back title-ribbon-back-right" aria-hidden="true"></span>
+          <span class="title-ribbon-fold title-ribbon-fold-left" aria-hidden="true"></span>
+          <span class="title-ribbon-fold title-ribbon-fold-right" aria-hidden="true"></span>
+          <span class="title-ribbon-front" aria-hidden="true"></span>
+          <span class="title-ribbon-text"><span class="en">self-hosted · plugin-free</span><span class="zh">自托管 · 无插件</span></span>
+        </span>
+      </span>
+
+      <h1>
+        <span class="en">Mirror your Zotero into Notion — <span class="hl">cleanly</span>.</span>
+        <span class="zh">把 Zotero 文献库,<span class="hl">干净地</span>镜像进 Notion。</span>
+      </h1>
+
+      <p class="lead">
+        <span class="en">One row per paper — metadata in properties, your reading notes as clean blocks, with a table of contents up top. Built on Notion's official <b>ntn</b> CLI, so it writes <b>as you</b>: no token, no integration to connect.</span>
+        <span class="zh">一篇论文一行:题录进属性,读书笔记作为干净的 block 进正文,最前面还带目录。基于 Notion 官方 <b>ntn</b> CLI、<b>以你本人身份</b>写入——免 token,不用连 integration。</span>
+      </p>
+
+      <div class="cta">
+        <a class="button-root button-primary button-large" href="https://github.com/BrooksC02/ntncite" target="_blank" rel="noopener" style="font-size:17px;height:54px;padding:0 30px;">
+          <span class="en">Get it on GitHub&nbsp;→</span><span class="zh">去 GitHub&nbsp;→</span>
+        </a>
+        <a class="button-root button-default button-large" href="#quickstart" style="font-size:17px;height:54px;padding:0 28px;">
+          <span class="en">Quick start</span><span class="zh">快速上手</span>
+        </a>
+      </div>
+
+      <div class="badges">
+        <span class="pill-tag">macOS</span>
+        <span class="pill-tag">MIT</span>
+        <span class="pill-tag"><span class="en">built on ntn</span><span class="zh">基于 ntn</span></span>
+        <span class="pill-tag"><span class="en">no token</span><span class="zh">免 token</span></span>
+      </div>
+    </div>
+
+    <figure class="hero-art">
+      <img class="en" src="menubar.png" alt="ntncite menu bar app showing sync status, currently-reading list, and health lights" />
+      <img class="zh" src="menubar.zh-CN.png" alt="ntncite 菜单栏 App:同步状态、在读列表、健康灯" />
+      <figcaption class="muted"><span class="en">The companion menu bar app — demo data.</span><span class="zh">配套的菜单栏 App —— demo 数据。</span></figcaption>
+    </figure>
+  </header>
+
+  <!-- ============ WHY ============ -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2><span class="en">Why ntncite</span><span class="zh">为什么是 ntncite</span></h2>
+      <p class="sub"><span class="en">The version of "Zotero → Notion" I wanted.</span><span class="zh">我想要的那版「Zotero → Notion」。</span></p>
+    </div>
+
+    <div class="grid-why">
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">Clean</span><span class="zh">干净</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">One paper, one row. Each note is its own block, metadata in real properties — no injected wrapper, no duplicated dates.</span><span class="zh">一篇一行。每条笔记各自成块,元数据进真实属性——无注入外壳、无重复日期。</span></p>
+      </div>
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">No token</span><span class="zh">免 token</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">Writes through ntn, authenticated as you. Nothing to paste, nothing to rotate.</span><span class="zh">经 ntn 写入,以你本人身份认证。没有密钥要粘贴、要轮换。</span></p>
+      </div>
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">Yours</span><span class="zh">归你</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">Plain TypeScript. You own the schema and the pipeline — no black box.</span><span class="zh">纯 TypeScript。schema 和管道都归你——没有黑盒。</span></p>
+      </div>
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">Complete</span><span class="zh">完整</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">Syncs both the metadata and your notes — not just citations.</span><span class="zh">题录与笔记一起同步——不只是引用。</span></p>
+      </div>
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">Idempotent</span><span class="zh">幂等</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">Dedupes by Zotero item key; a content hash decides create / skip / update.</span><span class="zh">按 Zotero item key 去重;content hash 判断 create / skip / update。</span></p>
+      </div>
+      <div class="card-root">
+        <span class="pill-tag lab"><span class="en">Automatic</span><span class="zh">自动</span></span>
+        <p class="card-p" style="margin:0;font-size:15.5px;"><span class="en">Runs in the background via launchd — every 15 min and whenever Zotero writes.</span><span class="zh">经 launchd 后台运行——每 15 分钟 + Zotero 写库时触发。</span></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep">
+    <span class="divider-root divider-line-teal"></span>
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>
+    <span class="divider-root divider-line-teal"></span>
+  </div>
+
+  <!-- ============ BEFORE / AFTER ============ -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2><span class="en">From Zotero to a clean Notion page</span><span class="zh">从 Zotero 到一页干净的 Notion</span></h2>
+      <p class="sub"><span class="en">Your reading, mirrored — not mangled.</span><span class="zh">你的阅读,被镜像,而不是被搅乱。</span></p>
+    </div>
+
+    <div class="ba">
+      <figure>
+        <img src="zotero-notes.png" alt="reading notes in Zotero" />
+        <figcaption class="muted"><span class="en">Your notes in Zotero …</span><span class="zh">你在 Zotero 里的笔记 …</span></figcaption>
+      </figure>
+      <div class="ba-arrow">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
+      </div>
+      <figure>
+        <img src="notion-page.png" alt="the synced paper page in Notion" />
+        <figcaption class="muted"><span class="en">… one clean Notion page: properties + a table of contents + notes as blocks.</span><span class="zh">… 一页干净的 Notion:属性 + 目录 + 笔记成块。</span></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <div class="sep">
+    <span class="divider-root divider-line-teal"></span>
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>
+    <span class="divider-root divider-line-teal"></span>
+  </div>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2><span class="en">How it works</span><span class="zh">工作原理</span></h2>
+      <p class="sub"><span class="en">One-way. Zotero is the source of truth.</span><span class="zh">单向。Zotero 是唯一真理源。</span></p>
+    </div>
+
+    <div class="pipe">
+<pre class="codeblock-pre en"><span class="codeblock-comment">Zotero (zotero.sqlite, read-only)        Better BibTeX JSON-RPC (:23119)</span>
+   notes + item metadata        ───────►   citekeys
+            │
+            ▼
+   group by paper · HTML → Markdown → Notion blocks (nesting ≤ 2)
+            │
+            ▼
+   <span class="codeblock-keyword">upsert</span> into a Notion "Library" DB   (via ntn · dedup by Zotero Item Key)</pre>
+<pre class="codeblock-pre zh"><span class="codeblock-comment">Zotero (zotero.sqlite, 只读)              Better BibTeX JSON-RPC (:23119)</span>
+   笔记 + 题录元数据             ───────►   citekey
+            │
+            ▼
+   按论文分组 · HTML → Markdown → Notion blocks(嵌套 ≤ 2 层)
+            │
+            ▼
+   <span class="codeblock-keyword">upsert</span> 进 Notion「Library」库   (经 ntn · 按 Zotero Item Key 去重)</pre>
+    </div>
+  </section>
+
+  <div class="sep">
+    <span class="divider-root divider-line-teal"></span>
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>
+    <span class="divider-root divider-line-teal"></span>
+  </div>
+
+  <!-- ============ MENU BAR APP ============ -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2><span class="en">A menu bar app to watch it</span><span class="zh">一个菜单栏 App 盯着它</span></h2>
+      <p class="sub"><span class="en">It only drives the CLI — no sync logic lives in the app. (Pictured at the top.)</span><span class="zh">它只驱动 CLI——同步逻辑不在 App 里。(页首那张就是它。)</span></p>
+    </div>
+
+    <div class="card-root feat">
+      <div class="checkbox-group checkbox-vertical checkbox-large" style="gap:16px;font-size:16px;">
+        <label class="checkbox-item checkbox-large checkbox-checked">
+          <span class="checkbox-box"><span class="checkbox-checkmark"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+          <span class="checkbox-label" style="font-size:16px;"><span class="en"><b>Status &amp; what's pending</b> — last-sync summary and an "N new · M changed" count.</span><span class="zh"><b>状态 + 待同步明细</b> —— 上次同步摘要 +「新 N · 改 M」计数。</span></span>
+        </label>
+        <label class="checkbox-item checkbox-large checkbox-checked">
+          <span class="checkbox-box"><span class="checkbox-checkmark"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+          <span class="checkbox-label" style="font-size:16px;"><span class="en"><b>Per-paper state</b> — new / changed / synced dots; click to open it in Notion.</span><span class="zh"><b>每篇状态点</b> —— 新 / 改 / 已同步;点击在 Notion 打开。</span></span>
+        </label>
+        <label class="checkbox-item checkbox-large checkbox-checked">
+          <span class="checkbox-box"><span class="checkbox-checkmark"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+          <span class="checkbox-label" style="font-size:16px;"><span class="en"><b>History</b> — per-run create / update / skip + duration, and which papers failed.</span><span class="zh"><b>历史</b> —— 每次的增 / 改 / 跳过 + 耗时,以及哪几篇失败。</span></span>
+        </label>
+        <label class="checkbox-item checkbox-large checkbox-checked">
+          <span class="checkbox-box"><span class="checkbox-checkmark"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+          <span class="checkbox-label" style="font-size:16px;"><span class="en"><b>Stale tab</b> — Notion pages no longer backed by Zotero (open to delete by hand).</span><span class="zh"><b>残留 tab</b> —— Notion 里 Zotero 已无对应的页(点开手动删)。</span></span>
+        </label>
+        <label class="checkbox-item checkbox-large checkbox-checked">
+          <span class="checkbox-box"><span class="checkbox-checkmark"><svg viewBox="0 0 16 16" fill="none"><path d="M2 8L6 12L14 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span>
+          <span class="checkbox-label" style="font-size:16px;"><span class="en"><b>Health lights</b> — BBT · ntn · volume · Notion, at a glance.</span><span class="zh"><b>健康灯</b> —— BBT · ntn · 卷 · Notion,一眼看清。</span></span>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div class="sep">
+    <span class="divider-root divider-line-teal"></span>
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>
+    <span class="divider-root divider-line-teal"></span>
+  </div>
+
+  <!-- ============ QUICK START ============ -->
+  <section class="sec" id="quickstart">
+    <div class="sec-head">
+      <h2><span class="en">Quick start</span><span class="zh">快速上手</span></h2>
+      <p class="sub"><span class="en">macOS, with Zotero + Better BibTeX running.</span><span class="zh">macOS,Zotero + Better BibTeX 开着。</span></p>
+    </div>
+
+    <div class="prereqs">
+      <span class="pill-tag">macOS</span>
+      <span class="pill-tag">Zotero + Better BibTeX</span>
+      <span class="pill-tag">Node 22+</span>
+      <span class="pill-tag">ntn</span>
+    </div>
+
+    <div class="quick">
+<pre class="codeblock-pre en"><span class="codeblock-comment"># 1 · install Notion's ntn CLI, then log in (interactive — only you can)</span>
+curl -fsSL https://ntn.dev | bash
+ntn login
+
+<span class="codeblock-comment"># 2 · clone + build the sync engine</span>
+git clone https://github.com/BrooksC02/ntncite
+cd ntncite/cli && pnpm install
+
+<span class="codeblock-comment"># 3 · point it at Zotero, create the Notion "Library" database</span>
+cp config.example.json config.json     <span class="codeblock-comment"># set zoteroDataDir</span>
+pnpm setup-db &lt;notion-page-id&gt;          <span class="codeblock-comment"># a page you can edit</span>
+
+<span class="codeblock-comment"># 4 · preview, then sync</span>
+pnpm sync --dry-run
+pnpm sync</pre>
+<pre class="codeblock-pre zh"><span class="codeblock-comment"># 1 · 装 Notion 官方 ntn CLI,再登录(交互式,只能你本人做)</span>
+curl -fsSL https://ntn.dev | bash
+ntn login
+
+<span class="codeblock-comment"># 2 · clone + 构建同步引擎</span>
+git clone https://github.com/BrooksC02/ntncite
+cd ntncite/cli && pnpm install
+
+<span class="codeblock-comment"># 3 · 指向 Zotero,创建 Notion「Library」库</span>
+cp config.example.json config.json     <span class="codeblock-comment"># 填 zoteroDataDir</span>
+pnpm setup-db &lt;notion-page-id&gt;          <span class="codeblock-comment"># 一个你能编辑的页面</span>
+
+<span class="codeblock-comment"># 4 · 先预览,再同步</span>
+pnpm sync --dry-run
+pnpm sync</pre>
+    </div>
+
+    <p class="quick-foot">
+      <span class="en">Full setup, flags, and the Notion schema → <a href="https://github.com/BrooksC02/ntncite#readme" target="_blank" rel="noopener">README</a>. Deploying with an AI agent? → <a href="https://github.com/BrooksC02/ntncite/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a>.</span>
+      <span class="zh">完整安装 / 参数 / Notion schema → <a href="https://github.com/BrooksC02/ntncite#readme" target="_blank" rel="noopener">README</a>。用 AI agent 部署?→ <a href="https://github.com/BrooksC02/ntncite/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a>。</span>
+    </p>
+  </section>
+
+  <div class="sep">
+    <span class="divider-root divider-line-teal"></span>
+    <svg viewBox="0 0 24 24" width="26" height="26"><path fill="currentColor" d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/></svg>
+    <span class="divider-root divider-line-teal"></span>
+  </div>
+
+  <!-- ============ SAFETY ============ -->
+  <section class="sec">
+    <div class="sec-head">
+      <h2><span class="en">One-way, and safe by design</span><span class="zh">单向,且设计上就安全</span></h2>
+      <p class="sub"><span class="en">It reads Zotero; it never writes back.</span><span class="zh">它只读 Zotero;从不回写。</span></p>
+    </div>
+
+    <div class="safe">
+      <div class="card-root card-app-teal">
+        <p class="card-h" style="margin:0 0 8px;font-size:19px;"><span class="en">Source of truth</span><span class="zh">唯一真理源</span></p>
+        <p class="card-p" style="margin:0;font-size:15px;"><span class="en">Zotero is the truth. The tool reads it read-only and never writes back — no reverse sync, ever.</span><span class="zh">Zotero 为准。脚本只读、从不回写——永远不做反向同步。</span></p>
+      </div>
+      <div class="card-root card-app-yellow">
+        <p class="card-h" style="margin:0 0 8px;font-size:19px;"><span class="en">No stored secret</span><span class="zh">不存密钥</span></p>
+        <p class="card-p" style="margin:0;font-size:15px;"><span class="en">Writes through ntn as you. ntncite holds no Notion token — config.json carries an id, not a credential.</span><span class="zh">经 ntn 以你本人身份写入。ntncite 不存 Notion token——config.json 里是 id,不是凭据。</span></p>
+      </div>
+      <div class="card-root card-app-green">
+        <p class="card-h" style="margin:0 0 8px;font-size:19px;color:#fff;"><span class="en">Reading Status is yours</span><span class="zh">Reading Status 归你</span></p>
+        <p class="card-p" style="margin:0;font-size:15px;"><span class="en">The one field the sync never overwrites. The page body is rewritten from Zotero — treat it as read-only.</span><span class="zh">唯一同步永不覆盖的字段。正文按 Zotero 重渲染——当它只读就好。</span></p>
+      </div>
+    </div>
+
+    <p class="safe-foot">
+      <span class="en">Conflicts resolve to Zotero, no merge — full <a href="https://github.com/BrooksC02/ntncite#sync-semantics" target="_blank" rel="noopener">Sync semantics</a> &amp; <a href="https://github.com/BrooksC02/ntncite/blob/main/SECURITY.md" target="_blank" rel="noopener">trust model</a>.</span>
+      <span class="zh">冲突一律以 Zotero 为准、不合并——完整 <a href="https://github.com/BrooksC02/ntncite#sync-semantics" target="_blank" rel="noopener">同步语义</a> 与 <a href="https://github.com/BrooksC02/ntncite/blob/main/SECURITY.md" target="_blank" rel="noopener">信任模型</a>。</span>
+    </p>
+  </section>
+
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer class="foot">
+  <div class="footer-band footer-sea" style="height:96px;"></div>
+  <div class="foot-inner">
+    <div class="linkrow">
+      <a href="https://github.com/BrooksC02/ntncite" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/BrooksC02/ntncite#readme" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/BrooksC02/ntncite/blob/main/README.zh-CN.md" target="_blank" rel="noopener">中文 README</a>
+      <a href="https://github.com/BrooksC02/ntncite/blob/main/AGENTS.md" target="_blank" rel="noopener">AGENTS.md</a>
+      <a href="https://github.com/BrooksC02/ntncite/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>
+      <a href="https://github.com/BrooksC02/ntncite/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </div>
+    <p class="credits">
+      <span class="en">Inspired by <a href="https://github.com/dvanoni/notero" target="_blank" rel="noopener">Notero</a>. UI: <a href="https://github.com/guokaigdg/animal-island-ui" target="_blank" rel="noopener">Animal Island UI</a> (MIT © guokaigdg).<br>© 2026 Brooks · A personal project, shared as-is.</span>
+      <span class="zh">受 <a href="https://github.com/dvanoni/notero" target="_blank" rel="noopener">Notero</a> 启发。界面:<a href="https://github.com/guokaigdg/animal-island-ui" target="_blank" rel="noopener">Animal Island UI</a>(MIT © guokaigdg)。<br>© 2026 Brooks · 个人项目,原样分享。</span>
+    </p>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var html = document.documentElement;
+    var btn = document.getElementById('langToggle');
+    btn.addEventListener('click', function () {
+      var toZh = html.getAttribute('data-lang') !== 'zh';
+      html.setAttribute('data-lang', toZh ? 'zh' : 'en');
+      html.setAttribute('lang', toZh ? 'zh-CN' : 'en');
+      btn.textContent = toZh ? 'EN' : '中文';
+    });
+  })();
+</script>
+
+</body>
+</html>
