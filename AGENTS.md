@@ -49,10 +49,11 @@ If anything above failed, install it before continuing:
 
 - **Node ≥ 22** — `brew install node`, or nvm/fnm. You can do this.
 - **pnpm** — `corepack enable` (ships with Node), or `brew install pnpm`. You can do this.
-- **`ntn`** (Notion's official CLI) — install per **Notion's official `ntn` instructions** (don't guess a
-  package name — check Notion's docs / `brew` / `npm` for the current method, or `ntn --version` to confirm).
-  You *can* install it; but **only the user can run `ntn login`** (interactive browser/OAuth). After login,
-  `ntn api v1/users/me` must return their account.
+- **`ntn`** (Notion's official CLI) — install with the official one-liner `curl -fsSL https://ntn.dev | bash`,
+  or `npm install --global ntn` (needs Node ≥ 22 / npm ≥ 10; macOS & Linux — on Windows npm is the only path).
+  Confirm with `ntn --version`. You *can* install it; but **only the user can run `ntn login`** (interactive
+  browser/OAuth — credentials land in the system keychain). After login, `ntn api v1/users/me` must return
+  their account.
 - **Better BibTeX** — a **Zotero plugin you cannot install programmatically**. Tell the user: download the
   `.xpi` from the Better BibTeX site, then in Zotero → Tools → Add-ons → gear → *Install Add-on From File*,
   and restart Zotero. Then make sure **Zotero is running** — the sync reads citekeys from BBT's JSON-RPC on
@@ -94,7 +95,8 @@ cd ../menubar && sh launchd/install.sh # menu-bar status app (needs Xcode / Swif
 
 ## Common failures → fix
 
-- **`ntn: command not found` / not authenticated** — user installs Notion's `ntn` CLI and runs `ntn login`.
+- **`ntn: command not found` / not authenticated** — install it (`curl -fsSL https://ntn.dev | bash`), then
+  the user runs `ntn login` (you can't — it's interactive).
 - **`schema validation failed: missing field …`** — re-run `pnpm setup-db`, or add the property by hand
   (names must match the schema table in `README.md` exactly).
 - **Nothing syncs** — ntncite only syncs papers that **have notes** ("currently reading"); plugin-generated
