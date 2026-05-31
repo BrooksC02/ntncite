@@ -102,8 +102,27 @@ async function archiveChildren(pageId: string): Promise<void> {
   for (const b of res.results) await ntnApi(`v1/blocks/${b.id}`, { method: 'DELETE' });
 }
 
+function tableOfContents() {
+  return {
+    object: 'block' as const,
+    type: 'table_of_contents' as const,
+    table_of_contents: { color: 'default' as const },
+  };
+}
+
+function hasHeading(blocks: any[]): boolean {
+  return blocks.some(
+    (b) => b?.type === 'heading_1' || b?.type === 'heading_2' || b?.type === 'heading_3',
+  );
+}
+
+/** 页面正文 = (有标题时)目录 block 置顶 + 聚合正文。无标题则不加(避免空目录)。 */
+function pageBlocks(p: PaperRecord): any[] {
+  return hasHeading(p.bodyBlocks) ? [tableOfContents(), ...p.bodyBlocks] : p.bodyBlocks;
+}
+
 async function createPage(notesDsId: string, p: PaperRecord): Promise<string> {
-  const [first, ...rest] = chunkBlocks(p.bodyBlocks);
+  const [first, ...rest] = chunkBlocks(pageBlocks(p));
   const page = await ntnApi<{ id: string }>('v1/pages', {
     method: 'POST',
     body: {
@@ -119,7 +138,7 @@ async function createPage(notesDsId: string, p: PaperRecord): Promise<string> {
 async function updatePage(pageId: string, p: PaperRecord): Promise<void> {
   await ntnApi(`v1/pages/${pageId}`, { method: 'PATCH', body: { properties: buildProperties(p, false) } });
   await archiveChildren(pageId);
-  await appendBlocks(pageId, p.bodyBlocks);
+  await appendBlocks(pageId, pageBlocks(p));
 }
 
 async function upsertOne(

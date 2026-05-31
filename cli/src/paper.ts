@@ -25,6 +25,8 @@ export interface PaperRecord {
   bodyBlocks: any[];
   /** 聚合正文规范化 hash,判断是否需 update */
   hash: string;
+  /** 该论文最近改动时间(parent 或任一笔记 dateModified 取最大),用于「最新更新」排序;不写 Notion */
+  lastModified: string | null;
 }
 
 function headingThree(text: string) {
@@ -108,6 +110,13 @@ export function buildPaperRecords(
       citekey ||
       key;
 
+    const modCandidates = [meta?.dateModified, ...groupNotes.map((n) => n.noteModified)].filter(
+      (x): x is string => Boolean(x),
+    );
+    const lastModified = modCandidates.length
+      ? modCandidates.reduce((a, b) => (a > b ? a : b))
+      : null;
+
     records.push({
       itemKey: key,
       standalone,
@@ -125,9 +134,15 @@ export function buildPaperRecords(
       imageCount: converted.reduce((s, c) => s + c.imageCount, 0),
       bodyBlocks,
       hash: contentHash(mdParts.join('\n\n')),
+      lastModified,
     });
   }
 
-  records.sort((a, b) => a.itemKey.localeCompare(b.itemKey));
+  // 最新更新在前;lastModified 相同 / 缺失时按 itemKey 兜底,保证顺序确定
+  records.sort(
+    (a, b) =>
+      (b.lastModified ?? '').localeCompare(a.lastModified ?? '') ||
+      a.itemKey.localeCompare(b.itemKey),
+  );
   return records;
 }
