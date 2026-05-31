@@ -3,8 +3,9 @@
 ![platform](https://img.shields.io/badge/platform-macOS-black)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![Notion](https://img.shields.io/badge/Notion-via%20ntn-000)
+[![homepage](https://img.shields.io/badge/homepage-brooksc02.github.io-19c8b9)](https://brooksc02.github.io/ntncite/)
 
-**English** · [中文](README.zh-CN.md)
+**English** · [中文](README.zh-CN.md) · [Website](https://brooksc02.github.io/ntncite/)
 
 **Mirror your Zotero library into Notion — cleanly.** A self-hosted, plugin-free sync built on
 Notion's official **`ntn`** CLI — inspired by [Notero](https://github.com/dvanoni/notero).

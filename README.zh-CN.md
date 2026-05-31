@@ -3,8 +3,9 @@
 ![platform](https://img.shields.io/badge/platform-macOS-black)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![Notion](https://img.shields.io/badge/Notion-via%20ntn-000)
+[![homepage](https://img.shields.io/badge/homepage-brooksc02.github.io-19c8b9)](https://brooksc02.github.io/ntncite/)
 
-[English](README.md) · **中文**
+[English](README.md) · **中文** · [项目主页](https://brooksc02.github.io/ntncite/)
 
 **把你的 Zotero 文献库干净地镜像进 Notion。** 一个自托管、无插件的同步工具,基于 Notion 官方的
 **`ntn`** CLI —— 灵感来自 [Notero](https://github.com/dvanoni/notero)。

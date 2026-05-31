@@ -151,6 +151,17 @@
       .ba-arrow { transform: rotate(90deg); margin: 4px 0; }
     }
   </style>
+
+  <!-- default language by browser locale (Chinese → 中文), set before body paints to avoid a flash -->
+  <script>
+    (function () {
+      var n = (navigator.languages && navigator.languages[0]) || navigator.language || 'en';
+      if (/^zh/i.test(n)) {
+        document.documentElement.setAttribute('data-lang', 'zh');
+        document.documentElement.setAttribute('lang', 'zh-CN');
+      }
+    })();
+  </script>
 </head>
 
 <body class="aiui">
@@ -181,7 +192,7 @@
       </span>
 
       <h1>
-        <span class="en">Mirror your Zotero into Notion — <span class="hl">cleanly</span>.</span>
+        <span class="en">Mirror your Zotero notes into Notion — <span class="hl">cleanly</span>.</span>
         <span class="zh">把 Zotero 文献笔记，<br><span class="hl">干净地</span>镜像进 Notion。</span>
       </h1>
 
@@ -467,11 +478,13 @@ pnpm sync</pre>
   (function () {
     var html = document.documentElement;
     var btn = document.getElementById('langToggle');
+    function label() { btn.textContent = html.getAttribute('data-lang') === 'zh' ? 'EN' : '中文'; }
+    label(); // reflect the language the <head> script may have already set
     btn.addEventListener('click', function () {
       var toZh = html.getAttribute('data-lang') !== 'zh';
       html.setAttribute('data-lang', toZh ? 'zh' : 'en');
       html.setAttribute('lang', toZh ? 'zh-CN' : 'en');
-      btn.textContent = toZh ? 'EN' : '中文';
+      label();
     });
   })();
 </script>
