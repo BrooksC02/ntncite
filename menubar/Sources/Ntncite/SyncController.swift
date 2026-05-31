@@ -64,6 +64,9 @@ final class SyncController: ObservableObject {
     @Published var lastError: String?
     @Published var lang: Lang
 
+    /// 截图/试用用的演示模式:NTNCITE_DEMO=1 时用公开论文填充,不碰真实 Zotero/Notion。
+    private let isDemo = ProcessInfo.processInfo.environment["NTNCITE_DEMO"] == "1"
+
     init() {
         if let saved = UserDefaults.standard.string(forKey: langKey), let l = Lang(rawValue: saved) {
             lang = l
@@ -71,10 +74,9 @@ final class SyncController: ObservableObject {
             lang = (Locale.current.language.languageCode?.identifier == "zh") ? .zh : .en
         }
         Task { await self.tick() }
-        Task { await self.pollLoop() }
+        if !isDemo { Task { await self.pollLoop() } }
     }
 
-    /// 英/中二选一。
     func loc(_ en: String, _ zh: String) -> String { lang == .zh ? zh : en }
 
     func setLang(_ l: Lang) {
@@ -90,11 +92,46 @@ final class SyncController: ObservableObject {
     }
 
     func tick() async {
+        if isDemo { loadDemo(); return }
         await refreshStatus()
         await loadEntries()
         await refreshDoctor()
         loadHistory()
         await refreshLaunchd()
+    }
+
+    /// 演示数据(著名公开论文,零真实信息)。
+    func loadDemo() {
+        let now = Date()
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        func iso(_ ago: TimeInterval) -> String { f.string(from: now.addingTimeInterval(-ago)) }
+
+        doctor = DoctorReport(volume: true, bbt: true, ntn: true, ntnWorkspace: "Demo", notion: true)
+        let demo: [(String, String, Int, String, Int)] = [
+            ("Attention Is All You Need", "vaswani2017", 2017, "Vaswani A, Shazeer N, Parmar N et al.", 3),
+            ("Deep Residual Learning for Image Recognition", "he2016", 2016, "He K, Zhang X, Ren S, Sun J", 1),
+            ("Language Models are Few-Shot Learners", "brown2020", 2020, "Brown T, Mann B et al.", 2),
+            ("Adam: A Method for Stochastic Optimization", "kingma2015", 2015, "Kingma D, Ba J", 1),
+            ("Generative Adversarial Networks", "goodfellow2014", 2014, "Goodfellow I et al.", 2),
+            ("BERT: Pre-training of Deep Bidirectional Transformers", "devlin2019", 2019, "Devlin J et al.", 1),
+            ("ImageNet Classification with Deep CNNs", "krizhevsky2012", 2012, "Krizhevsky A, Sutskever I, Hinton G", 1),
+            ("Highly accurate protein structure prediction with AlphaFold", "jumper2021", 2021, "Jumper J et al.", 4),
+        ]
+        entries = demo.map { t, ck, y, au, n in
+            PaperEntry(itemKey: ck, title: t, citekey: ck, year: y, noteCount: n,
+                       authors: au, publication: nil, standalone: false, notionPageId: nil)
+        }
+        history = [
+            HistoryEntry(ts: iso(180), trigger: "manual", create: 0, update: 0, skip: 8, total: 8, durationMs: 1240, ok: true, error: nil),
+            HistoryEntry(ts: iso(3600), trigger: "auto", create: 1, update: 0, skip: 7, total: 8, durationMs: 1510, ok: true, error: nil),
+            HistoryEntry(ts: iso(7200), trigger: "force", create: 0, update: 8, skip: 0, total: 8, durationMs: 12830, ok: true, error: nil),
+            HistoryEntry(ts: iso(90000), trigger: "auto", create: 2, update: 0, skip: 5, total: 7, durationMs: 1100, ok: true, error: nil),
+        ]
+        status = SyncStatus(ts: iso(0), pending: false, papers: 8, notes: 15,
+                            health: .init(zoteroBbt: true, volume: true), lastRun: history.first)
+        launchdLoaded = true
+        intervalMinutes = 15
     }
 
     private func pnpm(_ args: [String]) async -> ExecResult {
@@ -150,7 +187,7 @@ final class SyncController: ObservableObject {
     }
 
     func syncNow(force: Bool) async {
-        guard !isSyncing else { return }
+        guard !isSyncing, !isDemo else { return }
         isSyncing = true
         lastError = nil
         let r = await pnpm(force ? ["--force"] : [])
@@ -177,7 +214,7 @@ final class SyncController: ObservableObject {
     }
 
     func setInterval(minutes: Int) async {
-        guard var dict = try? readPlist() else { return }
+        guard !isDemo, var dict = try? readPlist() else { return }
         dict["StartInterval"] = minutes * 60
         if let data = try? PropertyListSerialization.data(fromPropertyList: dict, format: .xml, options: 0) {
             try? data.write(to: URL(fileURLWithPath: AppConfig.plistPath))
@@ -188,6 +225,7 @@ final class SyncController: ObservableObject {
     }
 
     func toggleLaunchd() async {
+        if isDemo { return }
         if launchdLoaded {
             _ = await runExec("/bin/launchctl", ["unload", AppConfig.plistPath])
         } else {
@@ -258,7 +296,6 @@ final class SyncController: ObservableObject {
         )
     }
 
-    /// 本地化的相对时间。
     func rel(_ iso: String) -> String {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

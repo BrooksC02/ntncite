@@ -19,6 +19,10 @@ to watch status, trigger syncs, and see history at a glance.
   <img src="docs/menubar.png" alt="ntncite menu bar app" width="380">
 </p>
 
+> Screenshot uses **demo data** (well-known public papers). Preview the UI yourself with no setup:
+> `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite` — then click the 📚 menu bar icon.
+> The 🌐 button toggles English / 中文.
+
 ## Why not just Notero?
 
 Notero is great, but: it injects notes into the page as an ugly collapsible `# Zotero Notes` wrapper,
