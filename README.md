@@ -130,6 +130,31 @@ pnpm sync --dry-run | --force | --citekey <ck> | --auto
 pnpm sync --status | --doctor | --list        # JSON, used by the menu bar app
 ```
 
+## Sync semantics
+
+One-way only: **Zotero is the source of truth, Notion is a mirror.** The tool reads Zotero
+read-only and never writes back. Each paper is matched by its Zotero item key, and a content
+hash decides whether a page is created, skipped (unchanged), or updated. An `update`
+re-renders the whole page body from the note's *current* Zotero content.
+
+What that means in practice:
+
+- **Editing a Notion page body is not durable.** The next `update` of that paper re-renders
+  the body from Zotero and overwrites your changes — same for metadata properties (Authors,
+  Tags, …). The **one exception is `Reading Status`**: the sync never overwrites it, so that
+  field is yours to manage in Notion.
+- **Editing or deleting a Zotero note propagates.** Edit a note → the next sync updates the
+  page. Delete one note of a multi-note paper → that section disappears on the next sync.
+- **Deleting a paper's last note (or the whole item) does NOT delete the Notion page.** The
+  paper just stops being synced and its page is left as a stale orphan — remove it by hand in
+  Notion if you want it gone.
+- **Conflicts resolve to Zotero, no merge.** If a paper's Zotero note changed, `update`
+  overwrites the Notion body (edits there are lost). If only Notion changed, the page is
+  skipped and your edit survives — but only until you next touch that Zotero note.
+
+Rule of thumb: treat the page **body** as read-only. Keep your own notes in Zotero, and use
+`Reading Status` (or a separate, un-synced page) for anything you want to own in Notion.
+
 ## Limitations
 
 - macOS only; personal library only (`libraryId` 1); Zotero + BBT must be running for a sync.

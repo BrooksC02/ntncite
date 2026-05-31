@@ -126,6 +126,28 @@ pnpm sync --dry-run | --force | --citekey <ck> | --auto
 pnpm sync --status | --doctor | --list        # JSON,菜单栏 App 用
 ```
 
+## 同步语义
+
+严格单向:**Zotero 是唯一真理源,Notion 是镜像。** 脚本只读 Zotero、从不回写。每篇论文按 Zotero
+item key 匹配,用 content hash 判断该页要 create / skip(无变化)/ update;`update` 会按笔记
+**当前**的 Zotero 内容**整页重渲染正文**。
+
+实际含义:
+
+- **在 Notion 页正文里改东西不持久。** 这篇下次 `update` 时正文会按 Zotero 整体重渲染、覆盖你的
+  改动;元数据属性(Authors、Tags…)同理。**唯一例外是 `Reading Status`** —— 同步永不覆盖它,
+  这个字段归你在 Notion 管。
+- **改 / 删 Zotero 笔记会传导过来。** 改笔记 → 下次同步更新该页;删掉多笔记论文里的一条 → 下次
+  同步那一段从 Notion 消失。
+- **删光一篇的最后一条笔记(或删整个 item)不会删 Notion 页。** 它只是不再被同步,页面变成停在
+  旧内容的孤儿页 —— 想去掉请在 Notion 手动删。
+- **冲突一律以 Zotero 为准,不做合并。** 只要这篇的 Zotero 笔记动过,`update` 就用 Zotero 覆盖
+  Notion 正文(你在那儿的改动丢失);若只动了 Notion、Zotero 没动则 skip、改动暂时保住 —— 但只到
+  你下次碰那条 Zotero 笔记为止。
+
+经验法则:把页面**正文**当只读。自己的笔记记在 Zotero,想在 Notion 自留的东西放 `Reading Status`
+(或另起一个不被同步的页面)。
+
 ## 限制
 
 - 仅 macOS;仅个人库(`libraryId` 1);同步时 Zotero + BBT 必须开着。
