@@ -165,7 +165,7 @@ struct PopoverView: View {
             Picker("", selection: $tab) {
                 Text(c.loc("Entries \(c.entries.count)", "条目 \(c.entries.count)")).tag(0)
                 Text(c.loc("History", "历史")).tag(1)
-                Text(c.loc("Orphans", "孤儿")).tag(2)
+                Text(c.loc("Stale", "残留")).tag(2)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -179,7 +179,7 @@ struct PopoverView: View {
         .sectionCard()
     }
 
-    // MARK: 孤儿页(Zotero 已无对应,Notion 还留着 —— 按需查)
+    // MARK: 残留页(Zotero 已无对应,Notion 还留着 —— 按需查)
 
     private var orphansList: some View {
         ScrollView {
@@ -191,7 +191,7 @@ struct PopoverView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 } else if c.orphans.isEmpty {
-                    Text(c.orphansChecked ? c.loc("No orphan pages 🎉", "没有孤儿页 🎉")
+                    Text(c.orphansChecked ? c.loc("No stale pages 🎉", "没有残留页 🎉")
                                           : c.loc("Checking…", "检查中…"))
                         .font(.caption2).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -280,7 +280,7 @@ async function main() {
     return;
   }
 
-  // --orphans:查 Notion 里已无 Zotero 对应的孤儿页(按需,会查一次 Notion)
+  // --orphans:查 Notion 里已无 Zotero 对应的残留页(按需,会查一次 Notion)
   if (args.orphans) {
     const currentKeys = new Set(papers.map((p) => p.itemKey));
     const orphans = await findOrphans(cfg, currentKeys);

@@ -169,7 +169,7 @@ final class SyncController: ObservableObject {
         }
     }
 
-    /// 按需查孤儿页(Zotero 已无对应、Notion 还留着的页)。会查一次 Notion,不放进 45s 轮询。
+    /// 按需查残留页(Zotero 已无对应、Notion 还留着的页)。会查一次 Notion,不放进 45s 轮询。
     func checkOrphans() async {
         if isDemo {
             orphans = [OrphanPage(itemKey: "OLD123", title: "A paper you removed from Zotero", pageId: "demo")]

@@ -140,7 +140,7 @@ item key 匹配,用 content hash 判断该页要 create / skip(无变化)/ updat
 - **改 / 删 Zotero 笔记会传导过来。** 改笔记 → 下次同步更新该页;删掉多笔记论文里的一条 → 下次
   同步那一段从 Notion 消失。
 - **删光一篇的最后一条笔记(或删整个 item)不会删 Notion 页。** 它只是不再被同步,页面变成停在
-  旧内容的孤儿页 —— 想去掉请在 Notion 手动删。
+  旧内容的残留页 —— 想去掉请在 Notion 手动删。
 - **冲突一律以 Zotero 为准,不做合并。** 只要这篇的 Zotero 笔记动过,`update` 就用 Zotero 覆盖
   Notion 正文(你在那儿的改动丢失);若只动了 Notion、Zotero 没动则 skip、改动暂时保住 —— 但只到
   你下次碰那条 Zotero 笔记为止。

@@ -87,7 +87,7 @@ export interface OrphanPage {
 }
 
 /**
- * 查 Notion 里已不再对应任何「现存 Zotero 论文」的孤儿页(Zotero 删了笔记/条目后脚本不会删页)。
+ * 查 Notion 里已不再对应任何「现存 Zotero 论文」的残留页(Zotero 删了笔记/条目后脚本不会删页)。
  * 会分页查一次 Notion——按需调用,别放进高频轮询。
  */
 export async function findOrphans(cfg: Config, currentKeys: Set<string>): Promise<OrphanPage[]> {

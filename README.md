@@ -146,7 +146,7 @@ What that means in practice:
 - **Editing or deleting a Zotero note propagates.** Edit a note → the next sync updates the
   page. Delete one note of a multi-note paper → that section disappears on the next sync.
 - **Deleting a paper's last note (or the whole item) does NOT delete the Notion page.** The
-  paper just stops being synced and its page is left as a stale orphan — remove it by hand in
+  paper just stops being synced and its page is left behind (stale) — remove it by hand in
   Notion if you want it gone.
 - **Conflicts resolve to Zotero, no merge.** If a paper's Zotero note changed, `update`
   overwrites the Notion body (edits there are lost). If only Notion changed, the page is
