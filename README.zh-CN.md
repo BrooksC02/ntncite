@@ -22,7 +22,7 @@
 </p>
 
 > 截图用的是 **demo 数据**(著名公开论文)。零配置预览界面:
-> `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite`,然后按 ⌃⌥⌘E 在状态栏展开。
+> `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite`,然后点菜单栏的 📚 打开。
 > 右下角 🌐 切换 English / 中文。
 
 ## 在 Notion 里长什么样

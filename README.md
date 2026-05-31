@@ -23,7 +23,7 @@ Comes with a **macOS menu bar app** to watch status, trigger syncs, and see hist
 </p>
 
 > Screenshot uses **demo data** (well-known public papers). Preview the UI yourself with no setup:
-> `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite` — then press **⌃⌥⌘E** to pop it open.
+> `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite` — then click the 📚 menu bar icon.
 > The 🌐 button toggles English / 中文.
 
 ## What it looks like in Notion
