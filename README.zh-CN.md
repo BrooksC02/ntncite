@@ -123,8 +123,15 @@ cd menubar && sh launchd/install.sh    # 编译、安装、自启;菜单栏出�
 # 或用 Xcode 打开 menubar/Package.swift 然后 Run
 ```
 
-App 显示上次同步摘要、"在读"论文列表(点击 → 在 Notion 打开)、同步历史,以及健康灯
-(BBT · ntn · 卷 · Notion)。它只驱动 CLI —— 同步逻辑不在 App 里。
+App 显示:
+
+- **状态 + 待同步明细** —— 上次同步摘要 + `新 N · 改 M` 计数。
+- **在读列表** —— 每篇带状态点(🔵新 / 🟠改 / 灰已同步)+ 未同步内嵌图标 🖼;点击 → 在 Notion 打开。
+- **历史** —— 每次的增 / 改 / 跳过 + 耗时,以及**哪几篇失败、为什么**。
+- **残留 tab** —— 按需查 Notion 里已无 Zotero 对应的页(点开 → 手动删)。
+- **健康灯** —— BBT · ntn · 卷 · Notion。
+
+它只驱动 CLI —— 同步逻辑不在 App 里。
 
 ## 命令
 
@@ -132,7 +139,7 @@ App 显示上次同步摘要、"在读"论文列表(点击 → 在 Notion 打开
 
 ```bash
 pnpm sync --dry-run | --force | --citekey <ck> | --auto
-pnpm sync --status | --doctor | --list        # JSON,菜单栏 App 用
+pnpm sync --status | --doctor | --list | --orphans   # JSON,菜单栏 App 用
 ```
 
 ## 同步语义

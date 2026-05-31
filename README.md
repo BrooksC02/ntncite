@@ -126,9 +126,15 @@ cd menubar && sh launchd/install.sh    # builds, installs, auto-starts; 📚 app
 # or open menubar/Package.swift in Xcode and Run
 ```
 
-The app shows last-sync summary, a "currently reading" list of papers (click → open in Notion),
-sync history, and health lights (BBT · ntn · volume · Notion). It only drives the CLI — no sync
-logic lives in the app.
+The app shows:
+
+- **Status + what's pending** — last-sync summary and a `N new · M changed` count.
+- **Currently-reading list** — each paper carries a state dot (new / changed / synced) and an image-not-synced badge; click → open it in Notion.
+- **History** — per-run create/update/skip + duration, and **which papers failed** (and why).
+- **Stale tab** — an on-demand check for Notion pages no longer backed by Zotero (click → open to delete by hand).
+- **Health lights** — BBT · ntn · volume · Notion.
+
+It only drives the CLI — no sync logic lives in the app.
 
 ## Commands
 
@@ -136,7 +142,7 @@ See [`cli/README.md`](cli/README.md). Quick reference:
 
 ```bash
 pnpm sync --dry-run | --force | --citekey <ck> | --auto
-pnpm sync --status | --doctor | --list        # JSON, used by the menu bar app
+pnpm sync --status | --doctor | --list | --orphans   # JSON, used by the menu bar app
 ```
 
 ## Sync semantics

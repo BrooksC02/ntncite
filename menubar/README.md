@@ -1,6 +1,6 @@
 # ntncite · menubar
 
-> A SwiftUI menu-bar shell over the sync engine — status, one-click sync, health lights, history. It only drives the CLI; no sync logic lives here. Build with `swift build`. (Notes below are in Chinese.)
+> A SwiftUI menu-bar shell over the sync engine — status + what's pending, one-click sync, per-paper state, health lights, history (with per-paper failures), and a Stale-pages check. It only drives the CLI; no sync logic lives here. Build with `swift build`. (Notes below are in Chinese.)
 
 macOS 菜单栏控制台(SwiftUI `MenuBarExtra`),`ntncite` sync 引擎的图形外壳。**不含同步逻辑**,
 只调 CLI(`pnpm --silent sync --status/--doctor/--list` + 读 `.sync-history.jsonl`)、手动触发、
@@ -8,10 +8,10 @@ macOS 菜单栏控制台(SwiftUI `MenuBarExtra`),`ntncite` sync 引擎的图形�
 
 ## 功能
 
-- 状态卡(同步中转圈)+ 上次同步摘要;**BBT 掉线弹橙色警告**(没 BBT 同步走不通)
+- 状态卡(同步中转圈)+ 上次同步摘要 + **待同步明细「新 N · 改 M」**;**BBT 掉线弹橙色警告**(没 BBT 同步走不通)
 - 立即同步 / 强制重推;频率分段(改 launchd 重载)+ 暂停/恢复自动同步
 - 健康灯:BBT · ntn · 卷 · Notion
-- 条目(每篇论文,点击跳其 Notion 页)/ 历史表
+- 三个分页:**条目**(每篇一行,状态点 🔵新/🟠改/灰已同步 + 未同步内嵌图标 🖼,点击跳其 Notion 页)· **历史**(增/改/跳过 + 耗时 + **失败明细**)· **残留**(按需查 Notion 里 Zotero 已无对应的页,点开手动删)
 
 ## 跑
 

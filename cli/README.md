@@ -30,9 +30,10 @@ pnpm sync --audit            # 聚合正文块类型审计
 pnpm sync --json             # PaperRecord(含 blocks)JSON
 
 # 给菜单栏 App 的契约(纯 JSON)
-pnpm --silent sync --status  # 快照
+pnpm --silent sync --status  # 快照 + 待同步计数(pendingNew / pendingChanged)
 pnpm --silent sync --doctor  # 健康:volume / bbt / ntn / notion
-pnpm --silent sync --list    # 论文条目(含 notionPageId)
+pnpm --silent sync --list    # 论文条目(syncState 新/改/已同步 · imageCount · notionPageId)
+pnpm --silent sync --orphans # 残留页:Notion 有、Zotero 已无的条目(会查一次 Notion,按需)
 
 pnpm typecheck
 ```
