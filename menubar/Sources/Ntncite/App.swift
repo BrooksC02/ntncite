@@ -8,7 +8,7 @@ struct NtnciteApp: App {
     @StateObject private var controller = SyncController()
 
     var body: some Scene {
-        MenuBarExtra("文献同步", systemImage: controller.iconName) {
+        MenuBarExtra("文献笔记同步", systemImage: controller.iconName) {
             PopoverView()
                 .environmentObject(controller)
         }

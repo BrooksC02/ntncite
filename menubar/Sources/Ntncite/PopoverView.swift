@@ -43,7 +43,7 @@ struct PopoverView: View {
                     }
                 }
             VStack(alignment: .leading, spacing: 2) {
-                Text(c.loc("ntncite", "文献同步")).font(.headline)
+                Text(c.loc("ntncite", "文献笔记同步")).font(.headline)
                 Text(c.stateText).font(.subheadline).foregroundStyle(c.stateColor)
             }
             Spacer()
