@@ -34,6 +34,15 @@
 
 行按**最近更新优先**排序,正在读的自然浮到最上面。手改**阅读状态**是安全的 —— 同步不会覆盖它(其余字段以 Zotero 为准)。
 
+<p align="center">
+  <img src="docs/zotero-notes.png" alt="Zotero 里的笔记" width="440"><br>
+  <sub><i>你在 Zotero 里的笔记 …</i></sub>
+</p>
+<p align="center">
+  <img src="docs/notion-page.png" alt="同步后的 Notion 页面" width="440"><br>
+  <sub><i>… 变成一页干净的 Notion:属性 + 目录 + 笔记成块</i></sub>
+</p>
+
 ## 缘起
 
 `ntncite` 来自两件事:[Notero](https://github.com/dvanoni/notero) 的启发(把 Zotero 阅读

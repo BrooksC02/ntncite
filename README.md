@@ -35,6 +35,15 @@ Each paper becomes **one row** in a Notion "Library" database. Open a row and yo
 
 Rows are ordered **most-recently-updated first**, so whatever you're reading floats to the top. Editing the **Reading Status** by hand is safe — the sync won't overwrite it (Zotero is the source of truth for everything else).
 
+<p align="center">
+  <img src="docs/zotero-notes.png" alt="reading notes in Zotero" width="440"><br>
+  <sub><i>your Zotero notes …</i></sub>
+</p>
+<p align="center">
+  <img src="docs/notion-page.png" alt="the synced paper page in Notion" width="440"><br>
+  <sub><i>… become one clean Notion page: properties + a table of contents + notes as blocks</i></sub>
+</p>
+
 ## Background
 
 `ntncite` grew out of two things: the inspiration of [Notero](https://github.com/dvanoni/notero)
