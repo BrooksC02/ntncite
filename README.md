@@ -1,5 +1,9 @@
 # ntncite
 
+![platform](https://img.shields.io/badge/platform-macOS-black)
+![license](https://img.shields.io/badge/license-MIT-blue)
+![Notion](https://img.shields.io/badge/Notion-via%20ntn-000)
+
 **Mirror your Zotero library into Notion — cleanly.** A self-hosted, plugin-free alternative to
 [Notero](https://github.com/dvanoni/notero), built on Notion's official **`ntn`** CLI.
 
@@ -8,6 +12,12 @@ in the page body — no `Zotero Notes` wrapper, no duplicated dates. Comes with 
 to watch status, trigger syncs, and see history at a glance.
 
 > Built for macOS · Zotero 7 · Better BibTeX. It's my personal setup, shared in case it helps you.
+
+## Screenshots
+
+<p align="center">
+  <img src="docs/menubar.png" alt="ntncite menu bar app" width="380">
+</p>
 
 ## Why not just Notero?
 
@@ -38,7 +48,7 @@ Two parts:
 | | what | stack |
 |---|---|---|
 | **`cli/`** | the sync engine — manual or background (launchd) | TypeScript / Node |
-| **`menubar/`** | menu bar app: status · one-click sync · health · history · charts | SwiftUI |
+| **`menubar/`** | menu bar app: status · one-click sync · health · history | SwiftUI |
 
 ## Prerequisites
 
@@ -52,10 +62,10 @@ Two parts:
 ## Setup
 
 ```bash
-git clone https://github.com/<you>/ntncite && cd ntncite/cli
+git clone https://github.com/BrooksC02/ntncite && cd ntncite/cli
 pnpm install
 cp config.example.json config.json          # set zoteroDataDir (default ~/Zotero)
-pnpm setup-db <notion-parent-page-id>           # creates the "Library" DB + fills config
+pnpm setup-db <notion-parent-page-id>        # creates the "Library" DB + fills config
 pnpm sync --dry-run                          # preview what would sync
 pnpm sync                                    # do it
 ```
@@ -89,8 +99,8 @@ cd menubar && sh launchd/install.sh    # builds, installs, auto-starts; 📚 app
 ```
 
 The app shows last-sync summary, a "currently reading" list of papers (click → open in Notion),
-sync history, a duration chart, and health lights (BBT · ntn · volume · Notion). It only drives the
-CLI — no sync logic lives in the app.
+sync history, and health lights (BBT · ntn · volume · Notion). It only drives the CLI — no sync
+logic lives in the app.
 
 ## Commands
 

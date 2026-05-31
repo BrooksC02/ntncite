@@ -1,5 +1,4 @@
 import AppKit
-import Charts
 import SwiftUI
 
 private extension View {
@@ -115,8 +114,8 @@ struct PopoverView: View {
         HStack(spacing: 6) {
             healthPill("BBT", c.doctor?.bbt).help("Zotero 开着 + Better BibTeX :23119 活")
             healthPill("ntn", c.doctor?.ntn).help("Notion CLI 已登录")
-            healthPill("卷", c.doctor?.volume).help("外置卷已挂载,能读 zotero.sqlite")
-            healthPill("Notion", c.doctor?.notion).help("「文献」库可达")
+            healthPill("卷", c.doctor?.volume).help("能读到 zotero.sqlite")
+            healthPill("Notion", c.doctor?.notion).help("「Library」库可达")
             Spacer(minLength: 0)
         }
         .sectionCard()
@@ -158,23 +157,18 @@ struct PopoverView: View {
         .sectionCard()
     }
 
-    // MARK: 分段:条目 / 历史 / 耗时
+    // MARK: 分段:条目 / 历史
 
     private var tabbedCard: some View {
         VStack(spacing: 8) {
             Picker("", selection: $tab) {
                 Text("条目 \(c.entries.count)").tag(0)
                 Text("历史").tag(1)
-                Text("耗时").tag(2)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
 
-            switch tab {
-            case 0: entriesList
-            case 1: historyList
-            default: chart
-            }
+            if tab == 0 { entriesList } else { historyList }
         }
         .sectionCard()
     }
@@ -185,7 +179,8 @@ struct PopoverView: View {
         ScrollView {
             VStack(spacing: 1) {
                 if c.entries.isEmpty {
-                    Text("(无条目)").font(.caption2).foregroundStyle(.secondary)
+                    Text("(无条目)")
+                        .font(.caption2).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     ForEach(c.entries) { e in
@@ -213,9 +208,9 @@ struct PopoverView: View {
                     }
                 }
             }
-            .padding(.trailing, 6) // 给滚动条留位,别压着徽标
+            .padding(.trailing, 6)
         }
-        .frame(height: 160)
+        .frame(height: 170)
     }
 
     private func entrySubtitle(_ e: PaperEntry) -> String {
@@ -252,7 +247,7 @@ struct PopoverView: View {
             }
             .padding(.trailing, 6)
         }
-        .frame(height: 160)
+        .frame(height: 170)
     }
 
     private func triggerMark(_ t: String) -> String {
@@ -263,35 +258,11 @@ struct PopoverView: View {
         }
     }
 
-    // MARK: 耗时柱状图
-
-    private var chart: some View {
-        Group {
-            if c.history.isEmpty {
-                Text("(暂无数据)").font(.caption2).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else {
-                Chart {
-                    ForEach(Array(c.history.prefix(12).reversed().enumerated()), id: \.offset) { item in
-                        BarMark(
-                            x: .value("run", item.offset),
-                            y: .value("秒", item.element.durationSec)
-                        )
-                        .foregroundStyle(item.element.ok ? Color.accentColor : Color.red)
-                        .cornerRadius(3)
-                    }
-                }
-                .chartXAxis(.hidden)
-            }
-        }
-        .frame(height: 160)
-    }
-
     // MARK: 底部
 
     private var footer: some View {
         HStack(spacing: 16) {
-            Button { c.open(.notion) } label: { Image(systemName: "book") }.help("打开「文献」库")
+            Button { c.open(.notion) } label: { Image(systemName: "book") }.help("打开「Library」库")
             Button { c.open(.log) } label: { Image(systemName: "doc.text") }.help("日志")
             Button { c.open(.zotero) } label: { Image(systemName: "books.vertical") }.help("Zotero")
             Button { c.open(.project) } label: { Image(systemName: "folder") }.help("项目文件夹")
