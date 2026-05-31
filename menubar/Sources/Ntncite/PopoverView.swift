@@ -2,7 +2,6 @@ import AppKit
 import SwiftUI
 
 private extension View {
-    /// 统一的分区卡片底:浅色圆角背景。
     func sectionCard() -> some View {
         padding(9).background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 10))
     }
@@ -44,17 +43,18 @@ struct PopoverView: View {
                     }
                 }
             VStack(alignment: .leading, spacing: 2) {
-                Text("文献同步").font(.headline)
+                Text(c.loc("ntncite", "文献同步")).font(.headline)
                 Text(c.stateText).font(.subheadline).foregroundStyle(c.stateColor)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {
                 if c.status?.pending == true {
-                    Text("● 有改动")
+                    Text(c.loc("● changes", "● 有改动"))
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.orange)
                 }
-                Text("\(c.entries.count) 篇 · \(c.status?.notes ?? 0) 笔记")
+                Text(c.loc("\(c.entries.count) papers · \(c.status?.notes ?? 0) notes",
+                           "\(c.entries.count) 篇 · \(c.status?.notes ?? 0) 笔记"))
                     .font(.caption2).foregroundStyle(.secondary)
             }
         }
@@ -65,7 +65,8 @@ struct PopoverView: View {
     private var bbtWarning: some View {
         HStack(spacing: 7) {
             Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            Text("BBT 未连(Zotero 没开?)—— 同步已暂停,citekey / 题录读不到")
+            Text(c.loc("BBT offline (Zotero not running?) — sync paused; citekeys/metadata unavailable",
+                       "BBT 未连(Zotero 没开?)—— 同步已暂停,citekey / 题录读不到"))
                 .font(.caption)
             Spacer(minLength: 0)
         }
@@ -86,7 +87,7 @@ struct PopoverView: View {
                         } else {
                             Image(systemName: "bolt.fill")
                         }
-                        Text(c.isSyncing ? "同步中…" : "立即同步")
+                        Text(c.isSyncing ? c.loc("Syncing…", "同步中…") : c.loc("Sync now", "立即同步"))
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -100,7 +101,7 @@ struct PopoverView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.large)
                 .disabled(c.isSyncing)
-                .help("强制全量重推(刷新所有元数据)")
+                .help(c.loc("Force full re-push (refresh all metadata)", "强制全量重推(刷新所有元数据)"))
             }
             if let err = c.lastError {
                 Text("✗ \(err)").font(.caption2).foregroundStyle(.red).lineLimit(2)
@@ -112,10 +113,10 @@ struct PopoverView: View {
 
     private var healthCard: some View {
         HStack(spacing: 6) {
-            healthPill("BBT", c.doctor?.bbt).help("Zotero 开着 + Better BibTeX :23119 活")
-            healthPill("ntn", c.doctor?.ntn).help("Notion CLI 已登录")
-            healthPill("卷", c.doctor?.volume).help("能读到 zotero.sqlite")
-            healthPill("Notion", c.doctor?.notion).help("「Library」库可达")
+            healthPill("BBT", c.doctor?.bbt).help(c.loc("Zotero running + Better BibTeX on :23119", "Zotero 开着 + Better BibTeX :23119 活"))
+            healthPill("ntn", c.doctor?.ntn).help(c.loc("Notion CLI logged in", "Notion CLI 已登录"))
+            healthPill(c.loc("vol", "卷"), c.doctor?.volume).help(c.loc("zotero.sqlite reachable", "能读到 zotero.sqlite"))
+            healthPill("Notion", c.doctor?.notion).help(c.loc("Library DB reachable", "「Library」库可达"))
             Spacer(minLength: 0)
         }
         .sectionCard()
@@ -152,7 +153,7 @@ struct PopoverView: View {
                     .foregroundStyle(c.launchdLoaded ? Color.secondary : Color.green)
             }
             .buttonStyle(.borderless)
-            .help(c.launchdLoaded ? "暂停自动同步" : "恢复自动同步")
+            .help(c.launchdLoaded ? c.loc("Pause auto-sync", "暂停自动同步") : c.loc("Resume auto-sync", "恢复自动同步"))
         }
         .sectionCard()
     }
@@ -162,8 +163,8 @@ struct PopoverView: View {
     private var tabbedCard: some View {
         VStack(spacing: 8) {
             Picker("", selection: $tab) {
-                Text("条目 \(c.entries.count)").tag(0)
-                Text("历史").tag(1)
+                Text(c.loc("Entries \(c.entries.count)", "条目 \(c.entries.count)")).tag(0)
+                Text(c.loc("History", "历史")).tag(1)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -179,7 +180,7 @@ struct PopoverView: View {
         ScrollView {
             VStack(spacing: 1) {
                 if c.entries.isEmpty {
-                    Text("(无条目)")
+                    Text(c.loc("(no entries)", "(无条目)"))
                         .font(.caption2).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
@@ -215,7 +216,7 @@ struct PopoverView: View {
 
     private func entrySubtitle(_ e: PaperEntry) -> String {
         var parts: [String] = []
-        if let ck = e.citekey { parts.append(ck) } else if e.standalone { parts.append("独立笔记") }
+        if let ck = e.citekey { parts.append(ck) } else if e.standalone { parts.append(c.loc("standalone note", "独立笔记")) }
         if let y = e.year { parts.append(String(y)) }
         if !e.authors.isEmpty { parts.append(e.authors) }
         return parts.joined(separator: " · ")
@@ -227,12 +228,12 @@ struct PopoverView: View {
         ScrollView {
             VStack(spacing: 2) {
                 if c.history.isEmpty {
-                    Text("(暂无记录)").font(.caption2).foregroundStyle(.secondary)
+                    Text(c.loc("(no history)", "(暂无记录)")).font(.caption2).foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
                     ForEach(c.history) { h in
                         HStack(spacing: 6) {
-                            Text(relativeTime(h.ts)).frame(width: 58, alignment: .leading)
+                            Text(c.rel(h.ts)).frame(width: 64, alignment: .leading)
                             Text(triggerMark(h.trigger))
                             Text("+\(h.create) ~\(h.update) =\(h.skip)").foregroundStyle(.secondary)
                             Spacer(minLength: 6)
@@ -262,13 +263,16 @@ struct PopoverView: View {
 
     private var footer: some View {
         HStack(spacing: 16) {
-            Button { c.open(.notion) } label: { Image(systemName: "book") }.help("打开「Library」库")
-            Button { c.open(.log) } label: { Image(systemName: "doc.text") }.help("日志")
+            Button { c.open(.notion) } label: { Image(systemName: "book") }.help(c.loc("Open Library DB", "打开「Library」库"))
+            Button { c.open(.log) } label: { Image(systemName: "doc.text") }.help(c.loc("Log", "日志"))
             Button { c.open(.zotero) } label: { Image(systemName: "books.vertical") }.help("Zotero")
-            Button { c.open(.project) } label: { Image(systemName: "folder") }.help("项目文件夹")
+            Button { c.open(.project) } label: { Image(systemName: "folder") }.help(c.loc("Project folder", "项目文件夹"))
             Spacer()
-            Button { Task { await c.tick() } } label: { Image(systemName: "arrow.clockwise") }.help("刷新")
-            Button { NSApplication.shared.terminate(nil) } label: { Image(systemName: "power") }.help("退出")
+            Button { c.setLang(c.lang == .zh ? .en : .zh) } label: {
+                Image(systemName: "globe")
+            }.help(c.loc("切换中文", "Switch to English"))
+            Button { Task { await c.tick() } } label: { Image(systemName: "arrow.clockwise") }.help(c.loc("Refresh", "刷新"))
+            Button { NSApplication.shared.terminate(nil) } label: { Image(systemName: "power") }.help(c.loc("Quit", "退出"))
         }
         .buttonStyle(.borderless)
         .foregroundStyle(.secondary)

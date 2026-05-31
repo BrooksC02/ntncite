@@ -54,6 +54,11 @@ struct PaperEntry: Codable, Identifiable {
     let notionPageId: String?
 }
 
+/// UI 语言。默认跟随系统(中文系统 → zh,否则 en),可在菜单里切换并记住。
+enum Lang: String, CaseIterable {
+    case en, zh
+}
+
 /// 运行期配置。路径不硬编码:优先环境变量(launchd 安装脚本会注入正确值),否则给出合理默认。
 enum AppConfig {
     /// CLI(sync 引擎)所在目录。launchd plist 注入 `NTNCITE_CLI_DIR`;开发时(Xcode 直接 Run)
@@ -72,7 +77,7 @@ enum AppConfig {
     static var historyPath: String { cliDir + "/.sync-history.jsonl" }
     static var plistPath: String { NSHomeDirectory() + "/Library/LaunchAgents/\(launchdLabel).plist" }
 
-    /// 「文献」库的 Notion URL:从 cli/config.json 的 notesDatabaseId / notesDataSourceId 推导;
+    /// 「Library」库的 Notion URL:从 cli/config.json 的 notesDatabaseId / notesDataSourceId 推导;
     /// 拿不到就开 Notion 首页。
     static var notionURL: String {
         let cfg = cliDir + "/config.json"

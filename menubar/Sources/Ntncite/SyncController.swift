@@ -41,17 +41,16 @@ func runExec(_ launchPath: String, _ args: [String], cwd: String? = nil) async -
     }
 }
 
-/// 从可能混入杂质的输出里抠出 JSON 对象(防御性,正常 pnpm --silent 已是纯 JSON)。
 private func extractJSON(_ s: String) -> Data? {
     guard let start = s.firstIndex(of: "{"), let end = s.lastIndex(of: "}") else { return nil }
     return String(s[start...end]).data(using: .utf8)
 }
-
-/// 抠出 JSON 数组(--list 输出)。
 private func extractJSONArray(_ s: String) -> Data? {
     guard let start = s.firstIndex(of: "["), let end = s.lastIndex(of: "]") else { return nil }
     return String(s[start...end]).data(using: .utf8)
 }
+
+private let langKey = "ntncite.lang"
 
 @MainActor
 final class SyncController: ObservableObject {
@@ -63,10 +62,24 @@ final class SyncController: ObservableObject {
     @Published var launchdLoaded = true
     @Published var intervalMinutes = 15
     @Published var lastError: String?
+    @Published var lang: Lang
 
     init() {
+        if let saved = UserDefaults.standard.string(forKey: langKey), let l = Lang(rawValue: saved) {
+            lang = l
+        } else {
+            lang = (Locale.current.language.languageCode?.identifier == "zh") ? .zh : .en
+        }
         Task { await self.tick() }
         Task { await self.pollLoop() }
+    }
+
+    /// 英/中二选一。
+    func loc(_ en: String, _ zh: String) -> String { lang == .zh ? zh : en }
+
+    func setLang(_ l: Lang) {
+        lang = l
+        UserDefaults.standard.set(l.rawValue, forKey: langKey)
     }
 
     private func pollLoop() async {
@@ -76,7 +89,6 @@ final class SyncController: ObservableObject {
         }
     }
 
-    /// 周期刷新:状态 + 条目 + 健康 + 历史 + launchd 状态。
     func tick() async {
         await refreshStatus()
         await loadEntries()
@@ -113,7 +125,6 @@ final class SyncController: ObservableObject {
         }
     }
 
-    /// 点条目 → 跳它的 Notion 页(没有 pageId 就开整个库)。
     func openPaper(_ e: PaperEntry) {
         if let pid = e.notionPageId, !pid.isEmpty {
             let clean = pid.replacingOccurrences(of: "-", with: "")
@@ -144,7 +155,7 @@ final class SyncController: ObservableObject {
         lastError = nil
         let r = await pnpm(force ? ["--force"] : [])
         if r.code != 0 {
-            lastError = r.stderr.split(separator: "\n").last.map(String.init) ?? "同步失败"
+            lastError = r.stderr.split(separator: "\n").last.map(String.init) ?? loc("sync failed", "同步失败")
         }
         isSyncing = false
         await tick()
@@ -185,12 +196,6 @@ final class SyncController: ObservableObject {
         await refreshLaunchd()
     }
 
-    func kickstart() async {
-        let uid = getuid()
-        _ = await runExec("/bin/launchctl", ["kickstart", "-k", "gui/\(uid)/\(AppConfig.launchdLabel)"])
-        await tick()
-    }
-
     // MARK: open links
 
     enum OpenTarget { case notion, log, zotero, project }
@@ -209,7 +214,7 @@ final class SyncController: ObservableObject {
         }
     }
 
-    // MARK: 派生展示
+    // MARK: 派生展示(本地化)
 
     var iconName: String {
         if isSyncing { return "arrow.triangle.2.circlepath" }
@@ -227,10 +232,10 @@ final class SyncController: ObservableObject {
     }
     var stateText: String {
         switch uiState {
-        case .syncing: return "同步中…"
-        case .error: return "有组件离线"
-        case .pending: return "有改动待同步"
-        case .idle: return "已是最新"
+        case .syncing: return loc("Syncing…", "同步中…")
+        case .error: return loc("Component offline", "有组件离线")
+        case .pending: return loc("Changes pending", "有改动待同步")
+        case .idle: return loc("Up to date", "已是最新")
         }
     }
     var stateColor: Color {
@@ -243,39 +248,26 @@ final class SyncController: ObservableObject {
     }
 
     var statusSummary: String {
-        guard let last = status?.lastRun else { return "尚无同步记录" }
-        let when = relativeTime(last.ts)
+        guard let last = status?.lastRun else { return loc("No sync yet", "尚无同步记录") }
         let changed = last.create + last.update
         let dur = String(format: "%.1fs", Double(last.durationMs) / 1000.0)
         let mark = last.ok ? "✓" : "✗"
-        return "上次:\(when) · \(last.total) 篇(改 \(changed))· \(dur) \(mark)"
+        return loc(
+            "Last: \(rel(last.ts)) · \(last.total) papers (\(changed) changed) · \(dur) \(mark)",
+            "上次:\(rel(last.ts)) · \(last.total) 篇(改 \(changed))· \(dur) \(mark)"
+        )
     }
 
-    var healthSummary: String {
-        guard let d = doctor else { return "健康:检测中…" }
-        func dot(_ ok: Bool) -> String { ok ? "🟢" : "🔴" }
-        return "BBT\(dot(d.bbt)) ntn\(dot(d.ntn)) 卷\(dot(d.volume)) Notion\(dot(d.notion))"
+    /// 本地化的相对时间。
+    func rel(_ iso: String) -> String {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
+        guard let date else { return iso }
+        let s = Int(Date().timeIntervalSince(date))
+        if s < 60 { return loc("just now", "刚刚") }
+        if s < 3600 { return loc("\(s / 60)m ago", "\(s / 60) 分钟前") }
+        if s < 86400 { return loc("\(s / 3600)h ago", "\(s / 3600) 小时前") }
+        return loc("\(s / 86400)d ago", "\(s / 86400) 天前")
     }
-
-    var intervalLabel: String { "\(intervalMinutes) 分钟" }
-
-    func historyLine(_ h: HistoryEntry) -> String {
-        let when = relativeTime(h.ts)
-        let dur = String(format: "%.1fs", Double(h.durationMs) / 1000.0)
-        let mark = h.ok ? "✓" : "✗"
-        return "\(when) · +\(h.create)/~\(h.update)/=\(h.skip) · \(dur) \(mark)"
-    }
-}
-
-/// ISO8601 → "x 分钟前" 这类相对时间。
-func relativeTime(_ iso: String) -> String {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    let date = f.date(from: iso) ?? ISO8601DateFormatter().date(from: iso)
-    guard let date else { return iso }
-    let secs = Int(Date().timeIntervalSince(date))
-    if secs < 60 { return "刚刚" }
-    if secs < 3600 { return "\(secs / 60) 分钟前" }
-    if secs < 86400 { return "\(secs / 3600) 小时前" }
-    return "\(secs / 86400) 天前"
 }
