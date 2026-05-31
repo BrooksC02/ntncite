@@ -18,7 +18,7 @@
 ## 截图
 
 <p align="center">
-  <img src="docs/menubar.png" alt="ntncite 菜单栏 App" width="380">
+  <img src="docs/menubar.zh-CN.png" alt="ntncite 菜单栏 App" width="380">
 </p>
 
 > 截图用的是 **demo 数据**(著名公开论文)。零配置预览界面:
@@ -81,8 +81,8 @@ Zotero (zotero.sqlite, 只读)            Better BibTeX JSON-RPC (:23119)
 - **Zotero** 开着(在 9.x 上测过)+ **Better BibTeX** 插件(同步靠 BBT 的 JSON-RPC :23119 解析
   citekey,所以 Zotero 必须开着)。
 - **Node 22+** 和 **pnpm**。
-- **`ntn`**(Notion 官方 CLI)已安装并登录(`ntn api v1/users/me` 能返回你的账号)。写 Notion 靠它,
-  不需要 integration token。
+- **`ntn`**(Notion 官方 CLI)已安装并登录。用 `curl -fsSL https://ntn.dev | bash`(或 `npm install --global ntn`)
+  装,再 `ntn login`;`ntn api v1/users/me` 能返回你的账号即可。写 Notion 靠它,不需要 integration token。
 
 ## 安装
 
@@ -181,7 +181,7 @@ item key 匹配,用 content hash 判断该页要 create / skip(无变化)/ updat
 
 ## 排错
 
-- **`ntn: command not found` / 没登录** —— 装上 Notion 的 `ntn` CLI 并 `ntn login`;`ntn api v1/users/me` 能返回你的账号即可。
+- **`ntn: command not found` / 没登录** —— 装上 Notion 的 `ntn` CLI(`curl -fsSL https://ntn.dev | bash`)并 `ntn login`;`ntn api v1/users/me` 能返回你的账号即可。
 - **什么都没同步** —— 只同步**有笔记**的论文(即「在读」)。先在 Zotero 里给它写条笔记。
 - **同步中止 / 连不上 `BBT JSON-RPC`** —— Zotero 必须**开着**且装了 Better BibTeX(它在 `:23119` 提供 citekey)。开 Zotero 再试。
 - **`schema validation failed: missing field …`** —— Notion 库缺了某个属性。重跑 `pnpm setup-db`,或手动补上(名字要跟上面 schema 表**完全一致**)。

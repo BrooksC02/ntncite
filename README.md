@@ -83,8 +83,9 @@ Two parts:
 - **Zotero** running (tested on 9.x), with the **Better BibTeX** plugin (the sync reads citekeys via
   BBT's JSON-RPC on `:23119`, so Zotero must be open).
 - **Node 22+** and **pnpm**.
-- **`ntn`** — Notion's official CLI — installed and logged in (`ntn api v1/users/me` returns your account).
-  This is how it writes to Notion; no integration token needed.
+- **`ntn`** — Notion's official CLI — installed and logged in. Install with `curl -fsSL https://ntn.dev | bash`
+  (or `npm install --global ntn`), then `ntn login`; `ntn api v1/users/me` should return your account. This is
+  how it writes to Notion; no integration token needed.
 
 ## Setup
 
@@ -187,7 +188,7 @@ Rule of thumb: treat the page **body** as read-only. Keep your own notes in Zote
 
 ## Troubleshooting
 
-- **`ntn: command not found` / not authenticated** — install Notion's `ntn` CLI and run `ntn login`; `ntn api v1/users/me` should return your account.
+- **`ntn: command not found` / not authenticated** — install it (`curl -fsSL https://ntn.dev | bash`) and run `ntn login`; `ntn api v1/users/me` should return your account.
 - **Nothing syncs** — only papers that have a **note** are synced (that's "currently reading"). Add a note in Zotero first.
 - **Sync aborts / `BBT JSON-RPC` unreachable** — Zotero must be **running** with Better BibTeX (it serves citekeys on `:23119`). Open Zotero and retry.
 - **`schema validation failed: missing field …`** — your Notion DB is missing a property. Re-run `pnpm setup-db`, or add the property by hand (names must match the schema table above exactly).
