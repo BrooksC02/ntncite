@@ -10,8 +10,9 @@
 Notion's official **`ntn`** CLI — inspired by [Notero](https://github.com/dvanoni/notero).
 
 One row per paper: bibliographic metadata in properties, your reading notes as clean Notion blocks
-in the page body — no `Zotero Notes` wrapper, no duplicated dates. Comes with a **macOS menu bar app**
-to watch status, trigger syncs, and see history at a glance.
+in the page body — no `Zotero Notes` wrapper, no duplicated dates, with a table of contents up top.
+It mirrors the papers you're **actively reading** (the ones you've annotated), newest-updated first.
+Comes with a **macOS menu bar app** to watch status, trigger syncs, and see history at a glance.
 
 > Built for macOS · Zotero + Better BibTeX. It's my personal setup, shared in case it helps you.
 
@@ -24,6 +25,15 @@ to watch status, trigger syncs, and see history at a glance.
 > Screenshot uses **demo data** (well-known public papers). Preview the UI yourself with no setup:
 > `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite` — then click the 📚 menu bar icon.
 > The 🌐 button toggles English / 中文.
+
+## What it looks like in Notion
+
+Each paper becomes **one row** in a Notion "Library" database. Open a row and you get:
+
+- **Properties** — title, authors, year, DOI, publication, citekey, item type, tags, Zotero URI, reading status, note count, date added.
+- **A table of contents**, then **your notes as clean blocks** — each note its own section, in the order you wrote them. No wrapper, no duplicated dates, no plugin cruft.
+
+Rows are ordered **most-recently-updated first**, so whatever you're reading floats to the top. Editing the **Reading Status** by hand is safe — the sync won't overwrite it (Zotero is the source of truth for everything else).
 
 ## Background
 
@@ -60,7 +70,7 @@ Two parts:
 
 ## Prerequisites
 
-- **macOS** (uses launchd; the menu bar app is SwiftUI / `MenuBarExtra`).
+- **macOS** (Apple Silicon or Intel; uses launchd, and the menu bar app is SwiftUI / `MenuBarExtra`).
 - **Zotero** running (tested on 9.x), with the **Better BibTeX** plugin (the sync reads citekeys via
   BBT's JSON-RPC on `:23119`, so Zotero must be open).
 - **Node 22+** and **pnpm**.
@@ -97,6 +107,7 @@ database with these properties (names must match exactly):
 
 ```bash
 cd cli && sh launchd/install.sh        # every 15 min + on Zotero writes + at login
+sh launchd/uninstall.sh                # remove the agent
 ```
 
 ### Menu bar app (optional)
@@ -124,6 +135,23 @@ pnpm sync --status | --doctor | --list        # JSON, used by the menu bar app
 - macOS only; personal library only (`libraryId` 1); Zotero + BBT must be running for a sync.
 - Syncs only papers that have notes ("currently reading"). Inline images in notes are not synced
   (placeholder text). Deeply nested lists are flattened to Notion's 2-level request limit.
+
+## Troubleshooting
+
+- **`ntn: command not found` / not authenticated** — install Notion's `ntn` CLI and run `ntn login`; `ntn api v1/users/me` should return your account.
+- **Nothing syncs** — only papers that have a **note** are synced (that's "currently reading"). Add a note in Zotero first.
+- **Sync aborts / `BBT JSON-RPC` unreachable** — Zotero must be **running** with Better BibTeX (it serves citekeys on `:23119`). Open Zotero and retry.
+- **`schema validation failed: missing field …`** — your Notion DB is missing a property. Re-run `pnpm setup-db`, or add the property by hand (names must match the schema table above exactly).
+- **Wrong Zotero library** — set `zoteroDataDir` in `config.json` (default `~/Zotero`); the DB is `zotero.sqlite` under it.
+- **Re-push everything** — `pnpm sync --force` rewrites all rows (after changing the mapping, or to backfill the table of contents on older pages).
+
+## Security
+
+`ntncite` stores no Notion token — it writes through `ntn`, authenticated as *you*. See **[SECURITY.md](SECURITY.md)** for the trust model and dependency notes.
+
+## Contributing
+
+A personal project, shared as-is — but issues and PRs are welcome.
 
 ## License
 
