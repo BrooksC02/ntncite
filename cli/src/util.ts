@@ -56,6 +56,11 @@ export function isDateOnlyMarker(title: string | null): boolean {
   return DATE_ONLY.test(title.replace(/^\s*🗒\s*/u, '').trim());
 }
 
+/** 标题是否 Zotero「从标注生成笔记」的自动标签(某个词 + 括号时间戳),如 "注释 (2026/5/31 12:34:15)"。 */
+export function isAnnotationLabel(title: string | null): boolean {
+  return !!title && /\(\s*\d{4}[./-]\d{1,2}[./-]\d{1,2}[\s\d:.apm]*\)\s*$/i.test(title.trim());
+}
+
 /**
  * Notion 行标题（spec §4.1）：优先用 Zotero 笔记标题；
  * 标题为空或「纯日期」时，用 `citekey · 正文首句` 兜底（纯日期当标题没信息量）。

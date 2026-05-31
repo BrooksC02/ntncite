@@ -1,5 +1,5 @@
 import { htmlToBlocks } from './convert/htmlToBlocks';
-import { contentHash, isDateOnlyMarker, parseNoteDate, plainText } from './util';
+import { contentHash, isAnnotationLabel, isDateOnlyMarker, parseNoteDate, plainText } from './util';
 import type { PaperMeta, ZoteroNote } from './zotero/sqlite';
 
 // 一行 = 一篇论文(有笔记的 = 在读)。元数据进属性,该论文的多条笔记各自成块进正文。
@@ -46,6 +46,29 @@ function blockText(b: any): string {
   return Array.isArray(rt) ? rt.map((r: any) => r?.text?.content ?? r?.plain_text ?? '').join('') : '';
 }
 const normWs = (s: string) => s.replace(/\s+/g, ' ').trim();
+
+/** 去掉开头的空段落块(如 Zotero「文献分析」笔记起始的 <p></p>)。 */
+function dropLeadingEmpty(blocks: any[]): any[] {
+  let i = 0;
+  while (i < blocks.length && blocks[i]?.type === 'paragraph' && normWs(blockText(blocks[i])) === '') i++;
+  return blocks.slice(i);
+}
+
+/**
+ * 删掉开头那几块「正好重建出标题」的块(标题已被 🗒 小标题代表)。
+ * 逐块累加比对:精确等于标题才删,只要中途超出/不再是前缀就放弃——绝不误删正文。
+ */
+function stripLeadingTitleEcho(blocks: any[], title: string): any[] {
+  const want = normWs(title);
+  if (!want) return blocks;
+  let acc = '';
+  for (let k = 0; k < Math.min(blocks.length, 4); k++) {
+    acc = normWs(`${acc} ${blockText(blocks[k])}`);
+    if (acc === want) return blocks.slice(k + 1);
+    if (!want.startsWith(acc)) break;
+  }
+  return blocks;
+}
 
 function fmtAuthors(meta: PaperMeta | null): string {
   if (!meta || !meta.authors.length) return '';
@@ -98,17 +121,17 @@ export function buildPaperRecords(
     const mdParts: string[] = [];
     const multi = converted.length > 1;
     converted.forEach((cn, i) => {
-      let blocks = cn.blocks;
+      let blocks = dropLeadingEmpty(cn.blocks); // 去掉开头空段(文献分析笔记的 <p></p>)
       if (multi) {
         if (i > 0) bodyBlocks.push(dividerBlock());
         const cap = cn.date ? `🗒 ${cn.date}` : `🗒 笔记 ${i + 1}`;
         bodyBlocks.push(headingThree(cap));
         mdParts.push(`### ${cap}`);
-        // 仅当笔记首行「就是个日期」(已被上面的 🗒 日期小标题代表)时,删掉这重复的首块。
-        // 注释 / 无日期标题 / 正文首句等其它格式一律保留,避免误删正文(如 "LncRNA" 这种短标题块)。
+        // 首行是「日期标记」或「注释 (时间戳)」自动标签时,删掉与标题重复的开头块(已被 🗒 小标题代表)。
+        // 注释标签可能拆成多块,用前缀重建判断。正文首句 / 短标题(如 LncRNA)一律保留。
         const title = (cn.note.noteTitle ?? '').trim();
-        if (blocks.length && isDateOnlyMarker(title) && normWs(blockText(blocks[0])) === normWs(title)) {
-          blocks = blocks.slice(1);
+        if (isDateOnlyMarker(title) || isAnnotationLabel(title)) {
+          blocks = stripLeadingTitleEcho(blocks, title);
         }
       }
       bodyBlocks.push(...blocks);
