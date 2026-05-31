@@ -4,14 +4,16 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![Notion](https://img.shields.io/badge/Notion-via%20ntn-000)
 
-**Mirror your Zotero library into Notion — cleanly.** A self-hosted, plugin-free alternative to
-[Notero](https://github.com/dvanoni/notero), built on Notion's official **`ntn`** CLI.
+**English** · [中文](README.zh-CN.md)
+
+**Mirror your Zotero library into Notion — cleanly.** A self-hosted, plugin-free sync built on
+Notion's official **`ntn`** CLI — inspired by [Notero](https://github.com/dvanoni/notero).
 
 One row per paper: bibliographic metadata in properties, your reading notes as clean Notion blocks
 in the page body — no `Zotero Notes` wrapper, no duplicated dates. Comes with a **macOS menu bar app**
 to watch status, trigger syncs, and see history at a glance.
 
-> Built for macOS · Zotero 7 · Better BibTeX. It's my personal setup, shared in case it helps you.
+> Built for macOS · Zotero + Better BibTeX. It's my personal setup, shared in case it helps you.
 
 ## Screenshots
 
@@ -23,15 +25,17 @@ to watch status, trigger syncs, and see history at a glance.
 > `cd menubar && swift build && NTNCITE_DEMO=1 .build/debug/Ntncite` — then click the 📚 menu bar icon.
 > The 🌐 button toggles English / 中文.
 
-## Why not just Notero?
+## Background
 
-Notero is great, but: it injects notes into the page as an ugly collapsible `# Zotero Notes` wrapper,
-needs an integration token, and you don't control the mapping. `ntncite`:
+`ntncite` grew out of two things: the inspiration of [Notero](https://github.com/dvanoni/notero)
+— the idea of mirroring your Zotero reading into Notion — and the release of Notion's official
+**`ntn`** CLI, which made it possible to write to Notion **as yourself, with no integration token**.
+That combination let me build the version I wanted:
 
-- **Clean** — one paper = one row; each note is its own block; metadata in real properties.
-- **No token** — writes through `ntn` (Notion's official CLI), authenticated as *you*; nothing to paste.
+- **Clean** — one paper = one row; each note is its own block; metadata in real properties (no injected wrapper).
+- **No token** — writes through `ntn`, authenticated as *you*; nothing to paste or rotate.
 - **Yours** — plain TypeScript; you own the schema and the pipeline.
-- **Complete** — syncs metadata *and* notes (replaces Notero entirely).
+- **Complete** — syncs both metadata *and* notes.
 - **Idempotent + automatic** — dedupes by Zotero item key; runs in the background via launchd.
 
 ## How it works
@@ -57,8 +61,8 @@ Two parts:
 ## Prerequisites
 
 - **macOS** (uses launchd; the menu bar app is SwiftUI / `MenuBarExtra`).
-- **Zotero 7** running, with the **Better BibTeX** plugin (the sync reads citekeys via BBT's
-  JSON-RPC on `:23119`, so Zotero must be open).
+- **Zotero** running (tested on 9.x), with the **Better BibTeX** plugin (the sync reads citekeys via
+  BBT's JSON-RPC on `:23119`, so Zotero must be open).
 - **Node 22+** and **pnpm**.
 - **`ntn`** — Notion's official CLI — installed and logged in (`ntn api v1/users/me` returns your account).
   This is how it writes to Notion; no integration token needed.
