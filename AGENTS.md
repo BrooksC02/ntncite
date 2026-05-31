@@ -27,8 +27,9 @@ is no token to manage.
      fails, stop and have the user run it themselves (in Claude Code they can type `! ntn login`).
   2. **The Notion parent-page ID.** Do **not** invent it. Ask the user to paste a Notion page URL or
      ID (a page they can edit) where the "Library" database should be created.
-- **Never commit `config.json`** — it's gitignored and holds the user's Notion data-source id. Only
-  `config.example.json` is tracked.
+- **Don't touch git.** This is the user's local checkout — don't `commit`, `push`, or `git add` during
+  setup. In particular `config.json` is gitignored and holds the user's Notion data-source id; never commit
+  it (only `config.example.json` is tracked).
 - Don't run `pnpm sync --force` or delete anything unprompted. `--status` / `--list` / `--doctor` /
   `--orphans` / `--dry-run` / `--inspect` are read-only and safe.
 
@@ -44,14 +45,27 @@ curl -fsS -m3 -X POST http://127.0.0.1:23119/better-bibtex/json-rpc \
   -d '{"jsonrpc":"2.0","id":1,"method":"user.groups","params":[]}'   # Zotero running + Better BibTeX installed?
 ```
 
-If the BBT check fails, the user must open **Zotero** (with the **Better BibTeX** plugin installed) —
-the sync reads citekeys from it on `:23119`.
+If anything above failed, install it before continuing:
+
+- **Node ≥ 22** — `brew install node`, or nvm/fnm. You can do this.
+- **pnpm** — `corepack enable` (ships with Node), or `brew install pnpm`. You can do this.
+- **`ntn`** (Notion's official CLI) — install per **Notion's official `ntn` instructions** (don't guess a
+  package name — check Notion's docs / `brew` / `npm` for the current method, or `ntn --version` to confirm).
+  You *can* install it; but **only the user can run `ntn login`** (interactive browser/OAuth). After login,
+  `ntn api v1/users/me` must return their account.
+- **Better BibTeX** — a **Zotero plugin you cannot install programmatically**. Tell the user: download the
+  `.xpi` from the Better BibTeX site, then in Zotero → Tools → Add-ons → gear → *Install Add-on From File*,
+  and restart Zotero. Then make sure **Zotero is running** — the sync reads citekeys from BBT's JSON-RPC on
+  `:23119`.
 
 ## Setup
 
+If you were pointed at an **already-cloned** checkout, skip `git clone` and just `cd cli`.
+
 ```bash
-git clone https://github.com/BrooksC02/ntncite && cd ntncite/cli
-pnpm install
+git clone https://github.com/BrooksC02/ntncite && cd ntncite/cli   # skip clone if already in the repo
+pnpm install                              # builds/downloads a native module (better-sqlite3);
+                                          #   the "Ignored build scripts: esbuild" warning is harmless
 cp config.example.json config.json
 #  → edit config.json: set "zoteroDataDir" to the user's Zotero data dir.
 #    Default is ~/Zotero; ASK the user if theirs is elsewhere (e.g. an external volume).
@@ -61,7 +75,8 @@ pnpm sync --dry-run                      # show the user the plan
 pnpm sync
 ```
 
-`pnpm setup-db` accepts a pasted Notion page URL or a raw 32-hex id.
+`pnpm setup-db` accepts a pasted Notion page URL or a raw 32-hex id. No "integration connect" is needed —
+`ntn` writes as the user, so their own access is enough (the page just has to be one they can edit).
 
 ## Optional (only if the user wants them)
 
@@ -85,6 +100,25 @@ cd ../menubar && sh launchd/install.sh # menu-bar status app (needs Xcode / Swif
 - **Nothing syncs** — ntncite only syncs papers that **have notes** ("currently reading"); plugin-generated
   pseudo-notes (Chartero etc.) are skipped. Have the user add a real note in Zotero.
 - **Sync aborts / `BBT JSON-RPC` unreachable** — Zotero must be running with Better BibTeX.
+
+## Updating later
+
+```bash
+cd ntncite && git pull && cd cli && pnpm install
+# if the user installed them, re-run the install scripts to pick up changes:
+sh launchd/install.sh                    # auto-sync agent
+cd ../menubar && sh launchd/install.sh   # menu-bar app
+```
+
+## Uninstalling / backing out
+
+```bash
+cd ntncite/cli && sh launchd/uninstall.sh     # remove the auto-sync agent (if installed)
+cd ../menubar && sh launchd/uninstall.sh      # remove the menu-bar app (if installed)
+```
+
+- Delete `cli/config.json` to drop the local data-source id.
+- The Notion "Library" DB is **not** auto-deleted — the user removes it by hand in Notion if they want it gone.
 
 ## Read for context
 
